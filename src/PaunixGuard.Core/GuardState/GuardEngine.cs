@@ -22,6 +22,8 @@ public sealed class GuardEngine
     private GuardSettings settings = new();
     private GuardEvent? activeEvent;
     private CancellationTokenSource? guardCancellation;
+    private CancellationTokenSource? warningCancellation;
+    private DateTimeOffset? graceExpiresAt;
 
     public GuardEngine(
         ISettingsStore settingsStore,
@@ -110,6 +112,8 @@ public sealed class GuardEngine
             await powerProtectionService.EnableAsync(settings, cancellationToken);
             await triggerSupervisor.StartAsync(HandleTriggerAsync, guardCancellation.Token);
             TransitionTo(GuardState.Armed);
+
+            graceExpiresAt = clock.UtcNow.AddSeconds(Math.Max(0, settings.GracePeriodSeconds));
         }
         finally
         {
@@ -142,10 +146,12 @@ public sealed class GuardEngine
             }
 
             TransitionTo(GuardState.Disarming);
+            warningCancellation?.Cancel();
             guardCancellation?.Cancel();
             await triggerSupervisor.StopAsync(cancellationToken);
             await powerProtectionService.DisableAsync(cancellationToken);
             await alarmOrchestrator.StopAsync(cancellationToken);
+            graceExpiresAt = null;
 
             if (activeEvent is not null)
             {
@@ -176,10 +182,12 @@ public sealed class GuardEngine
             }
 
             TransitionTo(GuardState.Disarming);
+            warningCancellation?.Cancel();
             guardCancellation?.Cancel();
             await triggerSupervisor.StopAsync(cancellationToken);
             await powerProtectionService.DisableAsync(cancellationToken);
             await alarmOrchestrator.StopAsync(cancellationToken);
+            graceExpiresAt = null;
 
             if (activeEvent is not null)
             {
@@ -213,6 +221,11 @@ public sealed class GuardEngine
                 return;
             }
 
+            if (signal.Type == TriggerType.InputActivity && IsWithinGracePeriod())
+            {
+                return;
+            }
+
             var decision = triggerPolicy.Decide(signal, settings);
             if (decision == TriggerDecision.Ignore)
             {
@@ -221,6 +234,16 @@ public sealed class GuardEngine
 
             if (decision == TriggerDecision.Warning)
             {
+                if (signal.Type == TriggerType.InputActivity)
+                {
+                    if (CurrentState != GuardState.Warning)
+                    {
+                        TransitionTo(GuardState.Warning, signal);
+                    }
+
+                    return;
+                }
+
                 TransitionTo(GuardState.Warning, signal);
                 return;
             }
@@ -238,6 +261,51 @@ public sealed class GuardEngine
         finally
         {
             gate.Release();
+        }
+
+        if (signal.Type == TriggerType.InputActivity && CurrentState == GuardState.Warning)
+        {
+            ResetWarningCountdown(signal);
+        }
+    }
+
+    private void ResetWarningCountdown(TriggerSignal signal)
+    {
+        warningCancellation?.Cancel();
+        warningCancellation = new CancellationTokenSource();
+        _ = RunWarningCountdownAsync(signal, warningCancellation.Token);
+    }
+
+    private async Task RunWarningCountdownAsync(TriggerSignal originalSignal, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(Math.Max(1, settings.InputWarningSeconds)), cancellationToken);
+
+            await gate.WaitAsync(CancellationToken.None);
+            try
+            {
+                if (CurrentState != GuardState.Warning)
+                {
+                    return;
+                }
+
+                var guardEvent = CreateEvent(originalSignal, GuardState.Warning);
+                activeEvent = guardEvent;
+                await eventHistoryStore.AddAsync(guardEvent, CancellationToken.None);
+
+                TransitionTo(GuardState.Alarm, originalSignal, guardEvent);
+                guardEvent.AlarmStartedAt = clock.UtcNow;
+                await eventHistoryStore.UpdateAsync(guardEvent, CancellationToken.None);
+                await alarmOrchestrator.StartAsync(originalSignal, settings, guardEvent, CancellationToken.None);
+            }
+            finally
+            {
+                gate.Release();
+            }
+        }
+        catch (OperationCanceledException)
+        {
         }
     }
 
@@ -264,5 +332,10 @@ public sealed class GuardEngine
         var previousState = CurrentState;
         CurrentState = nextState;
         StateChanged?.Invoke(this, new GuardStateChangedEventArgs(previousState, nextState, signal, guardEvent));
+    }
+
+    private bool IsWithinGracePeriod()
+    {
+        return graceExpiresAt.HasValue && clock.UtcNow < graceExpiresAt.Value;
     }
 }

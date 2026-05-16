@@ -34,15 +34,39 @@ public sealed class GuardEngineTests
         await fixture.Engine.StartGuardAsync(CancellationToken.None);
 
         await fixture.TriggerSupervisor.RaiseAsync(TriggerSignal.Create(
-            TriggerType.InputActivity,
-            "Input occurred.",
+            TriggerType.ChargerUnplugged,
+            "Power adapter unplugged.",
             "test",
             fixture.Clock.UtcNow));
 
         Assert.Equal(GuardState.Alarm, fixture.Engine.CurrentState);
         Assert.Equal(1, fixture.AlarmOrchestrator.StartCount);
         Assert.Single(fixture.EventHistory.Events);
-        Assert.Equal(TriggerType.InputActivity, fixture.EventHistory.Events[0].TriggerType);
+        Assert.Equal(TriggerType.ChargerUnplugged, fixture.EventHistory.Events[0].TriggerType);
+    }
+
+    [Fact]
+    public async Task InputActivity_TransitionsToWarning_NotAlarm()
+    {
+        var fixture = CreateFixture(new GuardSettings
+        {
+            ArmingDelaySeconds = 0,
+            GracePeriodSeconds = 0,
+            InputWarningSeconds = 5
+        });
+        await fixture.Engine.InitializeAsync(CancellationToken.None);
+        await fixture.Engine.SetPinAsync("1234", CancellationToken.None);
+        await fixture.Engine.StartGuardAsync(CancellationToken.None);
+
+        await fixture.TriggerSupervisor.RaiseAsync(TriggerSignal.Create(
+            TriggerType.InputActivity,
+            "Input occurred.",
+            "test",
+            fixture.Clock.UtcNow));
+
+        Assert.Equal(GuardState.Warning, fixture.Engine.CurrentState);
+        Assert.Equal(0, fixture.AlarmOrchestrator.StartCount);
+        Assert.Empty(fixture.EventHistory.Events);
     }
 
     [Fact]

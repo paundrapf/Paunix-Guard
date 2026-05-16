@@ -7,7 +7,6 @@ public sealed class TriggerPolicy
     private static readonly HashSet<TriggerType> ConfirmedThreats =
     [
         TriggerType.ChargerUnplugged,
-        TriggerType.InputActivity,
         TriggerType.LidClosed,
         TriggerType.SleepAttempt,
         TriggerType.ShutdownAttempt,
@@ -31,6 +30,11 @@ public sealed class TriggerPolicy
         if (ConfirmedThreats.Contains(signal.Type))
         {
             return TriggerDecision.Alarm;
+        }
+
+        if (signal.Type == TriggerType.InputActivity)
+        {
+            return TriggerDecision.Warning;
         }
 
         if (SuspiciousSignals.Contains(signal.Type))

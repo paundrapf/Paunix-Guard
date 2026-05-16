@@ -69,9 +69,16 @@ public partial class MainWindow : Window
 
             if (e.CurrentState is GuardState.Armed or GuardState.Arming)
             {
-                guardScreen ??= new GuardScreenWindow(compositionRoot.MainViewModel);
-                guardScreen.Show();
-                guardScreen.Activate();
+                EnsureGuardScreen();
+                guardScreen?.SetArmedVisual();
+                Hide();
+                return;
+            }
+
+            if (e.CurrentState == GuardState.Warning)
+            {
+                EnsureGuardScreen();
+                guardScreen?.SetWarningVisual();
                 Hide();
                 return;
             }
@@ -89,6 +96,16 @@ public partial class MainWindow : Window
                 Activate();
             }
         });
+    }
+
+    private void EnsureGuardScreen()
+    {
+        if (guardScreen is null)
+        {
+            guardScreen = new GuardScreenWindow(compositionRoot.MainViewModel);
+            guardScreen.Show();
+            guardScreen.Activate();
+        }
     }
 
     private void CloseGuardScreen()

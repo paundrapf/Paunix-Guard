@@ -64,7 +64,7 @@ public sealed class InputActivityTriggerSource(TimeSpan? pollingInterval = null)
                     "Keyboard, mouse, or trackpad activity occurred while guard mode was armed.",
                     Name,
                     DateTimeOffset.UtcNow));
-                return;
+                baseline = current;
             }
         }
     }

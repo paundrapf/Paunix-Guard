@@ -15,6 +15,10 @@ public sealed class GuardSettings
 
     public bool RestoreAudioAfterDisarm { get; set; } = true;
 
+    public int GracePeriodSeconds { get; set; } = 3;
+
+    public int InputWarningSeconds { get; set; } = 4;
+
     public BluetoothAlarmBehavior BluetoothAlarmBehavior { get; set; } = BluetoothAlarmBehavior.PreferInternalSpeaker;
 
     public bool KeepSystemAwakeWhileArmed { get; set; } = true;
