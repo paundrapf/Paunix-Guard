@@ -56,23 +56,11 @@ public sealed class VelopackUpdateService : IUpdateService
     {
         var source = new GithubSource(
             DefaultRepositoryUrl,
-            accessToken: GetGitHubToken(),
+            accessToken: null,
             prerelease: channel.Equals("beta", StringComparison.OrdinalIgnoreCase),
             downloader: null);
 
         return new UpdateManager(source, options: null, locator: null);
-    }
-
-    private static string? GetGitHubToken()
-    {
-        try
-        {
-            return Environment.GetEnvironmentVariable("GITHUB_TOKEN");
-        }
-        catch
-        {
-            return null;
-        }
     }
 }
 
