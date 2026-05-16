@@ -20,3 +20,6 @@ TestResults/
 *.snupkg
 conversation.md
 docs-dev/
+*.zip
+*.7z
+docs-dev/
