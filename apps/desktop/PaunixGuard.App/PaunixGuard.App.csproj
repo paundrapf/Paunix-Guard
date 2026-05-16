@@ -5,6 +5,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>PaunixGuard</AssemblyName>
     <RootNamespace>PaunixGuard.App</RootNamespace>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\PaunixGuard.Core\PaunixGuard.Core.csproj" />

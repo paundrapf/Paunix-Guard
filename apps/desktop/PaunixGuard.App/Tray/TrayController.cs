@@ -21,7 +21,7 @@ public sealed class TrayController(MainWindow mainWindow, AppCompositionRoot com
         notifyIcon = new Forms.NotifyIcon
         {
             Text = "Paunix Guard",
-            Icon = System.Drawing.SystemIcons.Shield,
+            Icon = System.Drawing.Icon.ExtractAssociatedIcon(System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName ?? ""),
             Visible = true,
             ContextMenuStrip = menu
         };

@@ -1,5 +1,7 @@
 # Paunix Guard
 
+<img src="assets/logo-128x128.png" alt="Paunix Guard" width="128" align="right">
+
 [![License](https://img.shields.io/badge/license-PolyForm%20Shield-blue)](https://polyformproject.org/licenses/shield/1.0.0/)
 
 Paunix Guard is a Windows-first, privacy-first laptop guard for public workspaces.

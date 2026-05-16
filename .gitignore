@@ -19,3 +19,4 @@ TestResults/
 *.nupkg
 *.snupkg
 conversation.md
+docs-dev/
