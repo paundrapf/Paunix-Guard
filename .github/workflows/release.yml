@@ -1,0 +1,77 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g. v0.1.0)'
+        required: true
+        default: 'v0.1.0'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore PaunixGuard.sln
+
+      - name: Build
+        run: dotnet build PaunixGuard.sln -c Release -p:Platform=x64
+
+      - name: Test
+        run: dotnet test PaunixGuard.sln -p:Platform=x64 -c Release
+
+      - name: Publish
+        run: >-
+          dotnet publish apps/desktop/PaunixGuard.App/PaunixGuard.App.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          -p:Platform=x64
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -o ./publish
+
+      - name: Package (zip)
+        run: Compress-Archive -Path ./publish/* -DestinationPath ./PaunixGuard-win-x64.zip
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version || github.ref_name }}
+          name: Paunix Guard ${{ github.event.inputs.version || github.ref_name }}
+          body: |
+            ## Paunix Guard ${{ github.event.inputs.version || github.ref_name }}
+
+            Windows desktop app for protecting your laptop in public spaces.
+
+            ### Installation
+            1. Download `PaunixGuard-win-x64.zip`
+            2. Extract to a folder
+            3. Run `PaunixGuard.exe`
+
+            ### Build from source
+            ```powershell
+            dotnet build PaunixGuard.sln -c Release -p:Platform=x64
+            dotnet test PaunixGuard.sln -p:Platform=x64
+            ```
+
+            **Note:** This is an unsigned build and may trigger Windows SmartScreen warnings.
+          files: ./PaunixGuard-win-x64.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
