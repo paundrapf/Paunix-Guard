@@ -6,7 +6,8 @@
         Height="460"
         WindowStartupLocation="CenterScreen"
         Background="#F6F7F9"
-        ResizeMode="NoResize">
+        ResizeMode="NoResize"
+        WindowStyle="ToolWindow">
   <Grid Margin="32">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />

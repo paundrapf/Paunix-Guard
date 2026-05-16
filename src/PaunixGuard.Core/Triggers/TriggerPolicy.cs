@@ -10,7 +10,8 @@ public sealed class TriggerPolicy
         TriggerType.LidClosed,
         TriggerType.SleepAttempt,
         TriggerType.ShutdownAttempt,
-        TriggerType.ManualPanic
+        TriggerType.ManualPanic,
+        TriggerType.DesktopSwitch
     ];
 
     private static readonly HashSet<TriggerType> SuspiciousSignals =

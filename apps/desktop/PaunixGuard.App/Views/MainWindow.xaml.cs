@@ -4,14 +4,16 @@ using System.Windows.Interop;
 using PaunixGuard.App.Composition;
 using PaunixGuard.App.ViewModels;
 using PaunixGuard.Core.GuardState;
+using PaunixGuard.Windows.Input;
 
 namespace PaunixGuard.App.Views;
 
 public partial class MainWindow : Window
 {
     private readonly AppCompositionRoot compositionRoot;
+    private readonly List<GuardScreenWindow> guardScreens = [];
     private AlarmWindow? alarmWindow;
-    private GuardScreenWindow? guardScreen;
+    private KeyboardInterceptor? kbInterceptor;
 
     public MainWindow(AppCompositionRoot compositionRoot)
     {
@@ -27,6 +29,7 @@ public partial class MainWindow : Window
         var source = (HwndSource)PresentationSource.FromVisual(this);
         source.AddHook(WndProc);
         compositionRoot.SystemEventRouter.AttachWindow(new WindowInteropHelper(this).Handle);
+        kbInterceptor = new KeyboardInterceptor();
     }
 
     protected override void OnClosing(CancelEventArgs e)
@@ -38,6 +41,7 @@ public partial class MainWindow : Window
             return;
         }
 
+        kbInterceptor?.Dispose();
         base.OnClosing(e);
     }
 
@@ -60,7 +64,8 @@ public partial class MainWindow : Window
         {
             if (e.CurrentState == GuardState.Alarm)
             {
-                CloseGuardScreen();
+                CloseGuardScreens();
+                kbInterceptor?.SetArmed(false);
                 alarmWindow ??= new AlarmWindow(compositionRoot.MainViewModel);
                 alarmWindow.Show();
                 alarmWindow.Activate();
@@ -69,23 +74,27 @@ public partial class MainWindow : Window
 
             if (e.CurrentState is GuardState.Armed or GuardState.Arming)
             {
-                EnsureGuardScreen();
-                guardScreen?.SetArmedVisual();
+                EnsureGuardScreens();
+                SetAllGuardScreens(g => g.SetArmedVisual());
+                kbInterceptor?.SetArmed(true);
                 Hide();
                 return;
             }
 
             if (e.CurrentState == GuardState.Warning)
             {
-                EnsureGuardScreen();
-                guardScreen?.SetWarningVisual();
+                EnsureGuardScreens();
+                SetAllGuardScreens(g => g.SetWarningVisual());
+                kbInterceptor?.SetArmed(true);
                 Hide();
                 return;
             }
 
             if (e.CurrentState == GuardState.Idle)
             {
-                CloseGuardScreen();
+                kbInterceptor?.SetArmed(false);
+                CloseGuardScreens();
+
                 if (alarmWindow is not null)
                 {
                     alarmWindow.Close();
@@ -98,22 +107,61 @@ public partial class MainWindow : Window
         });
     }
 
-    private void EnsureGuardScreen()
+    private void EnsureGuardScreens()
     {
-        if (guardScreen is null)
+        if (guardScreens.Count > 0)
         {
-            guardScreen = new GuardScreenWindow(compositionRoot.MainViewModel);
-            guardScreen.Show();
-            guardScreen.Activate();
+            return;
+        }
+
+        var screens = System.Windows.Forms.Screen.AllScreens;
+        for (var i = 0; i < screens.Length; i++)
+        {
+            var screen = screens[i];
+            var guard = new GuardScreenWindow(compositionRoot.MainViewModel);
+            guard.Left = screen.Bounds.Left;
+            guard.Top = screen.Bounds.Top;
+            guard.WindowState = WindowState.Maximized;
+            guard.ResizeMode = ResizeMode.NoResize;
+            guard.Topmost = true;
+            guard.ShowInTaskbar = false;
+            guard.Show();
+
+            if (i == 0 && guard.IsLoaded)
+            {
+                RegisterGuardScreenHandle(guard);
+            }
+            else if (i == 0)
+            {
+                var captured = guard;
+                guard.SourceInitialized += (_, _) => RegisterGuardScreenHandle(captured);
+            }
+
+            guardScreens.Add(guard);
         }
     }
 
-    private void CloseGuardScreen()
+    private void RegisterGuardScreenHandle(GuardScreenWindow guard)
     {
-        if (guardScreen is not null)
+        var helper = new WindowInteropHelper(guard);
+        compositionRoot.SystemEventRouter.SetGuardScreenHandle(helper.Handle);
+    }
+
+    private void SetAllGuardScreens(Action<GuardScreenWindow> action)
+    {
+        foreach (var guard in guardScreens)
         {
-            guardScreen.Close();
-            guardScreen = null;
+            action(guard);
         }
+    }
+
+    private void CloseGuardScreens()
+    {
+        foreach (var guard in guardScreens)
+        {
+            guard.Close();
+        }
+
+        guardScreens.Clear();
     }
 }

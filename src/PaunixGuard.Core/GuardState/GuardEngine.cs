@@ -24,6 +24,7 @@ public sealed class GuardEngine
     private CancellationTokenSource? guardCancellation;
     private CancellationTokenSource? warningCancellation;
     private DateTimeOffset? graceExpiresAt;
+    private int pinFailures;
 
     public GuardEngine(
         ISettingsStore settingsStore,
@@ -113,6 +114,7 @@ public sealed class GuardEngine
             await triggerSupervisor.StartAsync(HandleTriggerAsync, guardCancellation.Token);
             TransitionTo(GuardState.Armed);
 
+            pinFailures = 0;
             graceExpiresAt = clock.UtcNow.AddSeconds(Math.Max(0, settings.GracePeriodSeconds));
         }
         finally
@@ -137,8 +139,27 @@ public sealed class GuardEngine
         {
             if (!ValidatePin(pin))
             {
+                pinFailures++;
+                if (pinFailures >= 2 && CurrentState != GuardState.Idle)
+                {
+                    var signal = TriggerSignal.Create(
+                        TriggerType.ManualPanic,
+                        "Multiple failed PIN attempts — possible bruteforce.",
+                        "GuardEngine",
+                        clock.UtcNow);
+                    var guardEvent = CreateEvent(signal, CurrentState);
+                    activeEvent = guardEvent;
+                    await eventHistoryStore.AddAsync(guardEvent, CancellationToken.None);
+                    TransitionTo(GuardState.Alarm, signal, guardEvent);
+                    guardEvent.AlarmStartedAt = clock.UtcNow;
+                    await eventHistoryStore.UpdateAsync(guardEvent, CancellationToken.None);
+                    await alarmOrchestrator.StartAsync(signal, settings, guardEvent, CancellationToken.None);
+                }
+
                 return false;
             }
+
+            pinFailures = 0;
 
             if (CurrentState == GuardState.Idle)
             {

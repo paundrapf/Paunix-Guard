@@ -1,5 +1,8 @@
+using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 
 namespace PaunixGuard.App.Views;
 
@@ -15,6 +18,25 @@ public partial class SetupWizardWindow : Window
     {
         InitializeComponent();
         UpdateButtons();
+    }
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        var hwnd = new WindowInteropHelper(this).Handle;
+        var menu = GetSystemMenu(hwnd, false);
+        RemoveMenu(menu, SC_CLOSE, MF_BYCOMMAND);
+    }
+
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        if (DialogResult != true)
+        {
+            e.Cancel = true;
+            return;
+        }
+
+        base.OnClosing(e);
     }
 
     private void Back_Click(object sender, RoutedEventArgs e)
@@ -109,4 +131,13 @@ public partial class SetupWizardWindow : Window
             _ => "Next"
         };
     }
+
+    private const int SC_CLOSE = 0xF060;
+    private const int MF_BYCOMMAND = 0;
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetSystemMenu(IntPtr hWnd, bool bRevert);
+
+    [DllImport("user32.dll")]
+    private static extern int RemoveMenu(IntPtr hMenu, int nPosition, int wFlags);
 }

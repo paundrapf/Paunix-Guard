@@ -10,6 +10,7 @@ public enum TriggerType
     ManualPanic = 5,
     PhoneDisconnected = 6,
     WebcamMotion = 7,
-    WifiChanged = 8
+    WifiChanged = 8,
+    DesktopSwitch = 9
 }
 

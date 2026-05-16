@@ -1,7 +1,8 @@
+using System.ComponentModel;
 using System.Windows;
-using System.Windows.Media;
 using System.Windows.Threading;
 using PaunixGuard.App.ViewModels;
+using GuardStateEnum = PaunixGuard.Core.GuardState.GuardState;
 
 namespace PaunixGuard.App.Views;
 
@@ -22,16 +23,16 @@ public partial class GuardScreenWindow : Window
     {
         warningFlashTimer?.Stop();
         warningFlashTimer = null;
-        RootGrid.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1A, 0x1D, 0x23));
+        RootGrid.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1A, 0x1D, 0x23));
         StateText.Text = "ARMED";
-        StateText.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x38, 0xB2, 0x49));
+        StateText.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x38, 0xB2, 0x49));
         MessageText.Text = "Your laptop is protected. Alarm will sound if someone touches it.";
     }
 
     public void SetWarningVisual()
     {
         StateText.Text = "TYPE YOUR PIN";
-        StateText.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0x99, 0x00));
+        StateText.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0x99, 0x00));
         MessageText.Text = "Keyboard activity detected. Enter your PIN to cancel.";
 
         warningFlashTimer?.Stop();
@@ -45,11 +46,24 @@ public partial class GuardScreenWindow : Window
         {
             warningFlash = !warningFlash;
             RootGrid.Background = warningFlash
-                ? new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x33, 0x26, 0x00))
-                : new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1A, 0x1D, 0x23));
+                ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x33, 0x26, 0x00))
+                : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1A, 0x1D, 0x23));
         };
 
         warningFlashTimer.Start();
+    }
+
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        if (viewModel.CurrentState is GuardStateEnum.Armed
+            or GuardStateEnum.Arming
+            or GuardStateEnum.Warning)
+        {
+            e.Cancel = true;
+            return;
+        }
+
+        base.OnClosing(e);
     }
 
     private void GuardPinBox_OnPasswordChanged(object sender, RoutedEventArgs e)

@@ -34,19 +34,23 @@ public partial class App : System.Windows.Application
 
             if (!compositionRoot.GuardEngine.HasPin)
             {
-                var wizard = new SetupWizardWindow();
-                if (wizard.ShowDialog() == true)
+                while (!compositionRoot.GuardEngine.HasPin)
                 {
-                    compositionRoot.MainViewModel.PinInput = wizard.WizardPin;
-                    await compositionRoot.GuardEngine.SetPinAsync(wizard.WizardPin, CancellationToken.None);
+                    var wizard = new SetupWizardWindow();
+                    wizard.ShowDialog();
 
-                    var settings = wizard.ResultSettings;
-                    var current = compositionRoot.GuardEngine.Settings;
-                    current.ForceVolumeEnabled = settings.ForceVolumeEnabled;
-                    current.RestoreAudioAfterDisarm = settings.RestoreAudioAfterDisarm;
-                    current.KeepSystemAwakeWhileArmed = settings.KeepSystemAwakeWhileArmed;
-                    current.BlockShutdownWhileArmed = settings.BlockShutdownWhileArmed;
-                    await compositionRoot.GuardEngine.SaveSettingsAsync(current, CancellationToken.None);
+                    if (!string.IsNullOrWhiteSpace(wizard.WizardPin))
+                    {
+                        await compositionRoot.GuardEngine.SetPinAsync(wizard.WizardPin, CancellationToken.None);
+
+                        var settings = wizard.ResultSettings;
+                        var current = compositionRoot.GuardEngine.Settings;
+                        current.ForceVolumeEnabled = settings.ForceVolumeEnabled;
+                        current.RestoreAudioAfterDisarm = settings.RestoreAudioAfterDisarm;
+                        current.KeepSystemAwakeWhileArmed = settings.KeepSystemAwakeWhileArmed;
+                        current.BlockShutdownWhileArmed = settings.BlockShutdownWhileArmed;
+                        await compositionRoot.GuardEngine.SaveSettingsAsync(current, CancellationToken.None);
+                    }
                 }
             }
 

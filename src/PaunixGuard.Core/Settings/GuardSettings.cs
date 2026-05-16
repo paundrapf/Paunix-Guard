@@ -34,7 +34,8 @@ public sealed class GuardSettings
         TriggerType.LidClosed,
         TriggerType.SleepAttempt,
         TriggerType.ShutdownAttempt,
-        TriggerType.ManualPanic
+        TriggerType.ManualPanic,
+        TriggerType.DesktopSwitch
     ];
 
     public string UpdateChannel { get; set; } = "stable";
