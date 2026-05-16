@@ -1,0 +1,115 @@
+<Window x:Class="PaunixGuard.App.Views.SetupWizardWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Paunix Guard Setup"
+        Width="580"
+        Height="460"
+        WindowStartupLocation="CenterScreen"
+        Background="#F6F7F9"
+        ResizeMode="NoResize">
+  <Grid Margin="32">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <TextBlock Grid.Row="0"
+               Text="Paunix Guard Setup"
+               FontSize="24"
+               FontWeight="SemiBold"
+               Foreground="#15191F"
+               Margin="0,0,0,20" />
+
+    <Grid Grid.Row="1">
+      <StackPanel x:Name="Step1_Welcome" Visibility="Visible">
+        <TextBlock Text="Welcome to Paunix Guard"
+                   FontSize="18"
+                   FontWeight="SemiBold"
+                   Foreground="#0D1117"
+                   Margin="0,0,0,12" />
+        <TextBlock Text="Protect your laptop when you step away in cafes, coworking spaces, and libraries. Paunix Guard watches for physical theft signals and sounds a loud alarm."
+                   TextWrapping="Wrap"
+                   FontSize="14"
+                   Foreground="#3E4652"
+                   Margin="0,0,0,16" />
+        <TextBlock Text="Privacy-first and offline-first."
+                   TextWrapping="Wrap"
+                   FontSize="14"
+                   Foreground="#56606D"
+                   FontStyle="Italic" />
+      </StackPanel>
+
+      <StackPanel x:Name="Step2_Pin" Visibility="Collapsed">
+        <TextBlock Text="Create Your Disarm PIN"
+                   FontSize="18"
+                   FontWeight="SemiBold"
+                   Foreground="#0D1117"
+                   Margin="0,0,0,12" />
+        <TextBlock Text="Use at least 4 characters. You will need this to stop alarms."
+                   TextWrapping="Wrap"
+                   FontSize="14"
+                   Foreground="#3E4652"
+                   Margin="0,0,0,16" />
+        <PasswordBox x:Name="WizardPinBox"
+                     Margin="0,0,0,8" />
+        <PasswordBox x:Name="WizardPinConfirmBox" />
+        <TextBlock x:Name="PinError"
+                   Foreground="#B42318"
+                   FontSize="12"
+                   Margin="0,8,0,0"
+                   Visibility="Collapsed" />
+      </StackPanel>
+
+      <StackPanel x:Name="Step3_Settings" Visibility="Collapsed">
+        <TextBlock Text="Protection Settings"
+                   FontSize="18"
+                   FontWeight="SemiBold"
+                   Foreground="#0D1117"
+                   Margin="0,0,0,12" />
+        <CheckBox x:Name="ChkForceVolume" IsChecked="True" Margin="0,0,0,8">
+          Force max volume on alarm
+        </CheckBox>
+        <CheckBox x:Name="ChkRestoreAudio" IsChecked="True" Margin="0,0,0,8">
+          Restore volume after disarm
+        </CheckBox>
+        <CheckBox x:Name="ChkKeepAwake" IsChecked="True" Margin="0,0,0,8">
+          Keep laptop awake while armed
+        </CheckBox>
+        <CheckBox x:Name="ChkBlockShutdown" IsChecked="True">
+          Block shutdown while armed
+        </CheckBox>
+      </StackPanel>
+
+      <StackPanel x:Name="Step4_Finish" Visibility="Collapsed">
+        <TextBlock Text="You Are Ready"
+                   FontSize="18"
+                   FontWeight="SemiBold"
+                   Foreground="#0D1117"
+                   Margin="0,0,0,12" />
+        <TextBlock Text="Paunix Guard is set up. Click Start Guard to protect your laptop, or test the alarm first."
+                   TextWrapping="Wrap"
+                   FontSize="14"
+                   Foreground="#3E4652"
+                   Margin="0,0,0,16" />
+        <Button x:Name="BtnTestAlarm"
+                Content="Test Alarm"
+                Click="TestAlarm_Click"
+                Width="140" />
+      </StackPanel>
+    </Grid>
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+      <Button x:Name="BtnBack"
+              Content="Back"
+              Click="Back_Click"
+              Width="80"
+              Visibility="Collapsed"
+              Margin="0,0,8,0" />
+      <Button x:Name="BtnNext"
+              Content="Next"
+              Click="Next_Click"
+              Width="80" />
+    </StackPanel>
+  </Grid>
+</Window>

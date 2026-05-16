@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\alarm.wav" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PaunixGuard.Core\PaunixGuard.Core.csproj" />
+  </ItemGroup>
+</Project>
+

@@ -1,0 +1,49 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaunixGuard.Core", "src\PaunixGuard.Core\PaunixGuard.Core.csproj", "{C4E1D57B-A5C1-4F23-A768-4E3F07B172B0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaunixGuard.Windows", "src\PaunixGuard.Windows\PaunixGuard.Windows.csproj", "{4712B8B4-CAAF-4B35-A68B-1578537C44E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaunixGuard.Storage", "src\PaunixGuard.Storage\PaunixGuard.Storage.csproj", "{4A2B37AE-F256-49DB-86DF-083186595336}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaunixGuard.Updater", "src\PaunixGuard.Updater\PaunixGuard.Updater.csproj", "{2740AB27-31E0-4641-862D-34F47E66A6D3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaunixGuard.App", "apps\desktop\PaunixGuard.App\PaunixGuard.App.csproj", "{F7854F7A-D264-4834-80AF-7C26EA91ED5B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaunixGuard.App.Tests", "apps\desktop\PaunixGuard.App.Tests\PaunixGuard.App.Tests.csproj", "{8B216E44-38AC-4549-B8C0-4429F1D638AE}"
+EndProject
+Global
+  GlobalSection(SolutionConfigurationPlatforms) = preSolution
+    Debug|x64 = Debug|x64
+    Release|x64 = Release|x64
+  EndGlobalSection
+  GlobalSection(ProjectConfigurationPlatforms) = postSolution
+    {C4E1D57B-A5C1-4F23-A768-4E3F07B172B0}.Debug|x64.ActiveCfg = Debug|x64
+    {C4E1D57B-A5C1-4F23-A768-4E3F07B172B0}.Debug|x64.Build.0 = Debug|x64
+    {C4E1D57B-A5C1-4F23-A768-4E3F07B172B0}.Release|x64.ActiveCfg = Release|x64
+    {C4E1D57B-A5C1-4F23-A768-4E3F07B172B0}.Release|x64.Build.0 = Release|x64
+    {4712B8B4-CAAF-4B35-A68B-1578537C44E8}.Debug|x64.ActiveCfg = Debug|x64
+    {4712B8B4-CAAF-4B35-A68B-1578537C44E8}.Debug|x64.Build.0 = Debug|x64
+    {4712B8B4-CAAF-4B35-A68B-1578537C44E8}.Release|x64.ActiveCfg = Release|x64
+    {4712B8B4-CAAF-4B35-A68B-1578537C44E8}.Release|x64.Build.0 = Release|x64
+    {4A2B37AE-F256-49DB-86DF-083186595336}.Debug|x64.ActiveCfg = Debug|x64
+    {4A2B37AE-F256-49DB-86DF-083186595336}.Debug|x64.Build.0 = Debug|x64
+    {4A2B37AE-F256-49DB-86DF-083186595336}.Release|x64.ActiveCfg = Release|x64
+    {4A2B37AE-F256-49DB-86DF-083186595336}.Release|x64.Build.0 = Release|x64
+    {2740AB27-31E0-4641-862D-34F47E66A6D3}.Debug|x64.ActiveCfg = Debug|x64
+    {2740AB27-31E0-4641-862D-34F47E66A6D3}.Debug|x64.Build.0 = Debug|x64
+    {2740AB27-31E0-4641-862D-34F47E66A6D3}.Release|x64.ActiveCfg = Release|x64
+    {2740AB27-31E0-4641-862D-34F47E66A6D3}.Release|x64.Build.0 = Release|x64
+    {F7854F7A-D264-4834-80AF-7C26EA91ED5B}.Debug|x64.ActiveCfg = Debug|x64
+    {F7854F7A-D264-4834-80AF-7C26EA91ED5B}.Debug|x64.Build.0 = Debug|x64
+    {F7854F7A-D264-4834-80AF-7C26EA91ED5B}.Release|x64.ActiveCfg = Release|x64
+    {F7854F7A-D264-4834-80AF-7C26EA91ED5B}.Release|x64.Build.0 = Release|x64
+    {8B216E44-38AC-4549-B8C0-4429F1D638AE}.Debug|x64.ActiveCfg = Debug|x64
+    {8B216E44-38AC-4549-B8C0-4429F1D638AE}.Debug|x64.Build.0 = Debug|x64
+    {8B216E44-38AC-4549-B8C0-4429F1D638AE}.Release|x64.ActiveCfg = Release|x64
+    {8B216E44-38AC-4549-B8C0-4429F1D638AE}.Release|x64.Build.0 = Release|x64
+  EndGlobalSection
+EndGlobal
+
