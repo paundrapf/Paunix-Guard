@@ -58,6 +58,51 @@ public partial class MainWindow : Window
         }
     }
 
+    private void Settings_Click(object sender, RoutedEventArgs e)
+    {
+        var window = new SettingsWindow(compositionRoot.MainViewModel);
+        window.ShowDialog();
+    }
+
+    private void History_Click(object sender, RoutedEventArgs e)
+    {
+        var window = new HistoryWindow(compositionRoot.MainViewModel);
+        window.ShowDialog();
+    }
+
+    private async void ResetPin_Click(object sender, RoutedEventArgs e)
+    {
+        var result = System.Windows.MessageBox.Show(
+            "This will erase your current PIN. You will need to set a new one.",
+            "Reset PIN",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (result != MessageBoxResult.Yes) return;
+
+        try
+        {
+            await compositionRoot.GuardEngine.ResetPinAsync(CancellationToken.None);
+            compositionRoot.MainViewModel.PinInput = "";
+            System.Windows.MessageBox.Show(
+                "PIN has been reset. The setup wizard will open.",
+                "Paunix Guard",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+
+            var wizard = new SetupWizardWindow();
+            if (wizard.ShowDialog() == true || !string.IsNullOrWhiteSpace(wizard.WizardPin))
+            {
+                await compositionRoot.GuardEngine.SetPinAsync(wizard.WizardPin, CancellationToken.None);
+                compositionRoot.MainViewModel.PinInput = "";
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show($"Failed to reset PIN: {ex.Message}", "Paunix Guard", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private void OnGuardStateChanged(object? sender, GuardStateChangedEventArgs e)
     {
         Dispatcher.Invoke(() =>

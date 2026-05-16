@@ -44,6 +44,7 @@ public partial class GuardScreenWindow : Window
 
         warningFlashTimer.Tick += (_, _) =>
         {
+            if (RootGrid is null) return;
             warningFlash = !warningFlash;
             RootGrid.Background = warningFlash
                 ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x33, 0x26, 0x00))
@@ -55,6 +56,9 @@ public partial class GuardScreenWindow : Window
 
     protected override void OnClosing(CancelEventArgs e)
     {
+        warningFlashTimer?.Stop();
+        warningFlashTimer = null;
+
         if (viewModel.CurrentState is GuardStateEnum.Armed
             or GuardStateEnum.Arming
             or GuardStateEnum.Warning)

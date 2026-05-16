@@ -72,6 +72,12 @@ public sealed class GuardEngine
         await settingsStore.SaveAsync(settings, cancellationToken);
     }
 
+    public async Task ResetPinAsync(CancellationToken cancellationToken)
+    {
+        settings.PinHash = null;
+        await settingsStore.SaveAsync(settings, cancellationToken);
+    }
+
     public async Task StartGuardAsync(CancellationToken cancellationToken)
     {
         if (!HasPin)

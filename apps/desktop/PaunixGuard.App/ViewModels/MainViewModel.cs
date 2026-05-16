@@ -31,7 +31,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         this.eventHistoryStore = eventHistoryStore;
         this.systemEventRouter = systemEventRouter;
 
-        StartGuardCommand = new RelayCommand(StartGuardAsync, () => !IsBusy);
+        StartGuardCommand = new RelayCommand(StartGuardAsync, () => !IsBusy && HasPin);
         DisarmCommand = new RelayCommand(DisarmAsync, () => !IsBusy);
         TestAlarmCommand = new RelayCommand(TestAlarmAsync, () => !IsBusy);
         SavePinCommand = new RelayCommand(SavePinAsync, () => !IsBusy);

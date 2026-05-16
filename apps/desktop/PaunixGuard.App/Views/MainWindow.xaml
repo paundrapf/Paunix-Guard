@@ -2,12 +2,12 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Paunix Guard"
-        Width="760"
-        Height="520"
         MinWidth="640"
         MinHeight="440"
         WindowStartupLocation="CenterScreen"
-        Background="#F6F7F9">
+        Background="#F6F7F9"
+        FontFamily="Segoe UI">
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
   <Grid Margin="24">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
@@ -15,19 +15,21 @@
       <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
 
-    <StackPanel Grid.Row="0">
+    <StackPanel Grid.Row="0" Orientation="Horizontal">
       <Image Source="/Assets/logo.png"
-             Width="48"
-             Height="48"
-             Margin="0,0,0,8" />
-      <TextBlock Text="Paunix Guard"
-                 FontSize="32"
-                 FontWeight="SemiBold"
-                 Foreground="#15191F" />
-      <TextBlock Text="Offline-first laptop guard for short public-space breaks."
-                 FontSize="14"
-                 Foreground="#56606D"
-                 Margin="0,4,0,20" />
+             Width="36"
+             Height="36"
+             Margin="0,0,12,0" />
+      <StackPanel>
+        <TextBlock Text="Paunix Guard"
+                   FontSize="28"
+                   FontWeight="SemiBold"
+                   Foreground="#15191F" />
+        <TextBlock Text="Offline-first laptop guard for short public-space breaks."
+                   FontSize="13"
+                   Foreground="#56606D"
+                   Margin="0,2,0,20" />
+      </StackPanel>
     </StackPanel>
 
     <Grid Grid.Row="1">
@@ -122,9 +124,16 @@
       </Border>
     </Grid>
 
-    <TextBlock Grid.Row="2"
-               Text="Paunix Guard does not record keys, read files, read clipboard data, or run hidden monitoring."
-               Foreground="#56606D"
-               Margin="0,18,0,0" />
+    <StackPanel Grid.Row="2">
+      <WrapPanel Margin="0,0,0,8">
+        <Button Content="Settings" Click="Settings_Click" Width="80" />
+        <Button Content="History" Click="History_Click" Width="80" />
+        <Button Content="Reset PIN" Click="ResetPin_Click" Width="90" />
+      </WrapPanel>
+      <TextBlock Text="Paunix Guard does not record keys, read files, read clipboard data, or run hidden monitoring."
+                 Foreground="#56606D"
+                 FontSize="11" />
+    </StackPanel>
   </Grid>
+  </ScrollViewer>
 </Window>
