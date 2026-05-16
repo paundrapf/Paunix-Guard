@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Windows;
 using System.Windows.Input;
 using PaunixGuard.Core.Events;
 using PaunixGuard.Core.GuardState;
@@ -19,6 +20,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private string statusMessage = "Ready";
     private string latestEvent = "No events yet";
     private bool isBusy;
+    private UpdateCheckResult? pendingUpdate;
 
     public MainViewModel(
         GuardEngine guardEngine,
@@ -36,6 +38,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         TestAlarmCommand = new RelayCommand(TestAlarmAsync, () => !IsBusy);
         SavePinCommand = new RelayCommand(SavePinAsync, () => !IsBusy);
         CheckUpdatesCommand = new RelayCommand(CheckUpdatesAsync, () => !IsBusy);
+        InstallUpdateCommand = new RelayCommand(InstallUpdateAsync, () => !IsBusy && HasPendingUpdate);
 
         guardEngine.StateChanged += OnStateChanged;
     }
@@ -51,6 +54,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public ICommand SavePinCommand { get; }
 
     public ICommand CheckUpdatesCommand { get; }
+
+    public ICommand InstallUpdateCommand { get; }
 
     public string PinInput
     {
@@ -102,9 +107,23 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public IEventHistoryStore EventHistoryStore => eventHistoryStore;
 
+    public bool HasPendingUpdate => pendingUpdate?.IsAvailable == true;
+
+    public string? PendingUpdateVersion => pendingUpdate?.Version;
+
+    public Visibility UpdateBannerVisibility => HasPendingUpdate ? Visibility.Visible : Visibility.Collapsed;
+
     public async Task SaveSettingsAsync(Core.Settings.GuardSettings settings)
     {
         await guardEngine.SaveSettingsAsync(settings, CancellationToken.None);
+    }
+
+    public void SetPendingUpdate(UpdateCheckResult result)
+    {
+        pendingUpdate = result;
+        OnPropertyChanged(nameof(HasPendingUpdate));
+        OnPropertyChanged(nameof(PendingUpdateVersion));
+        OnPropertyChanged(nameof(UpdateBannerVisibility));
     }
 
     public async Task RefreshLatestEventAsync(CancellationToken cancellationToken)
@@ -175,11 +194,22 @@ public sealed class MainViewModel : INotifyPropertyChanged
         await RunBusyAsync(async () =>
         {
             var result = await updateService.CheckAsync(guardEngine.Settings.UpdateChannel, CancellationToken.None);
+            SetPendingUpdate(result);
+
             StatusMessage = result.ErrorMessage is not null
                 ? $"Update check failed: {result.ErrorMessage}"
                 : result.IsAvailable
                     ? $"Update available: {result.Version}"
                     : "No updates available.";
+        });
+    }
+
+    private async Task InstallUpdateAsync()
+    {
+        await RunBusyAsync(async () =>
+        {
+            StatusMessage = "Downloading update...";
+            await updateService.DownloadAndApplyAsync(CancellationToken.None);
         });
     }
 
@@ -220,7 +250,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     private void RaiseCommandStates()
     {
-        foreach (var command in new[] { StartGuardCommand, DisarmCommand, TestAlarmCommand, SavePinCommand, CheckUpdatesCommand })
+        foreach (var command in new[] { StartGuardCommand, DisarmCommand, TestAlarmCommand, SavePinCommand, CheckUpdatesCommand, InstallUpdateCommand })
         {
             if (command is RelayCommand relayCommand)
             {

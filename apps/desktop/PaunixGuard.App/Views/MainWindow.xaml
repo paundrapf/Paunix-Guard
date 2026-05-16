@@ -84,6 +84,24 @@
             <Button Content="Check Updates"
                     Command="{Binding CheckUpdatesCommand}" />
           </WrapPanel>
+
+          <Border Background="#E3F2FD"
+                  BorderBrush="#90CAF9"
+                  BorderThickness="1"
+                  CornerRadius="6"
+                  Padding="10"
+                  Margin="0,12,0,0"
+                   Visibility="{Binding UpdateBannerVisibility}">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+              <TextBlock Text="{Binding PendingUpdateVersion, StringFormat='Update {0} available'}"
+                         Foreground="#1565C0"
+                         VerticalAlignment="Center" />
+              <Button Content="Install"
+                      Command="{Binding InstallUpdateCommand}"
+                      Width="70"
+                      Margin="10,0,0,0" />
+            </StackPanel>
+          </Border>
         </StackPanel>
       </Border>
 

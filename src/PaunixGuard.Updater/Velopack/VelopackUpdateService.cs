@@ -6,7 +6,7 @@ namespace PaunixGuard.Updater.Velopack;
 
 public sealed class VelopackUpdateService : IUpdateService
 {
-    private const string DefaultRepositoryUrl = "https://github.com/paunix/paunix-guard";
+    private const string DefaultRepositoryUrl = "https://github.com/paundrapf/Paunix-Guard";
     private UpdateManager? updateManager;
     private UpdateInfo? pendingUpdate;
 
@@ -56,11 +56,23 @@ public sealed class VelopackUpdateService : IUpdateService
     {
         var source = new GithubSource(
             DefaultRepositoryUrl,
-            accessToken: null,
+            accessToken: GetGitHubToken(),
             prerelease: channel.Equals("beta", StringComparison.OrdinalIgnoreCase),
             downloader: null);
 
         return new UpdateManager(source, options: null, locator: null);
+    }
+
+    private static string? GetGitHubToken()
+    {
+        try
+        {
+            return Environment.GetEnvironmentVariable("GITHUB_TOKEN");
+        }
+        catch
+        {
+            return null;
+        }
     }
 }
 

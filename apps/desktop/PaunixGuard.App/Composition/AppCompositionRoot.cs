@@ -76,7 +76,28 @@ public sealed class AppCompositionRoot : IAsyncDisposable
             await GuardEngine.SaveSettingsAsync(GuardEngine.Settings, cancellationToken);
         }
 
+        if (GuardEngine.Settings.AutoCheckUpdates)
+        {
+            _ = CheckForUpdatesAsync(cancellationToken);
+        }
+
         await MainViewModel.RefreshLatestEventAsync(cancellationToken);
+    }
+
+    private async Task CheckForUpdatesAsync(CancellationToken ct)
+    {
+        try
+        {
+            var result = await UpdateService.CheckAsync(
+                GuardEngine.Settings.UpdateChannel, ct);
+            if (result.IsAvailable)
+            {
+                MainViewModel.SetPendingUpdate(result);
+            }
+        }
+        catch
+        {
+        }
     }
 
     private static string? EnsureEmbeddedAlarmExtracted()
