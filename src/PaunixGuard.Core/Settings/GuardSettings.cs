@@ -41,5 +41,48 @@ public sealed class GuardSettings
     public string UpdateChannel { get; set; } = "stable";
 
     public bool AutoCheckUpdates { get; set; } = true;
-}
 
+    public GuardSettings Clone()
+    {
+        return new GuardSettings
+        {
+            PinHash = PinHash,
+            ArmingDelaySeconds = ArmingDelaySeconds,
+            AlarmSound = AlarmSound,
+            ForceVolumeEnabled = ForceVolumeEnabled,
+            RestoreAudioAfterDisarm = RestoreAudioAfterDisarm,
+            GracePeriodSeconds = GracePeriodSeconds,
+            InputWarningSeconds = InputWarningSeconds,
+            BluetoothAlarmBehavior = BluetoothAlarmBehavior,
+            KeepSystemAwakeWhileArmed = KeepSystemAwakeWhileArmed,
+            KeepDisplayAwakeWhileArmed = KeepDisplayAwakeWhileArmed,
+            BlockShutdownWhileArmed = BlockShutdownWhileArmed,
+            EnabledTriggers = EnabledTriggers is null ? [] : [.. EnabledTriggers],
+            UpdateChannel = UpdateChannel,
+            AutoCheckUpdates = AutoCheckUpdates
+        };
+    }
+
+    public void Normalize()
+    {
+        ArmingDelaySeconds = Math.Clamp(ArmingDelaySeconds, 0, 3600);
+        GracePeriodSeconds = Math.Clamp(GracePeriodSeconds, 0, 300);
+        InputWarningSeconds = Math.Clamp(InputWarningSeconds, 1, 300);
+
+        EnabledTriggers ??=
+        [
+            TriggerType.ChargerUnplugged,
+            TriggerType.InputActivity,
+            TriggerType.LidClosed,
+            TriggerType.SleepAttempt,
+            TriggerType.ShutdownAttempt,
+            TriggerType.ManualPanic,
+            TriggerType.DesktopSwitch
+        ];
+
+        if (string.IsNullOrWhiteSpace(UpdateChannel))
+        {
+            UpdateChannel = "stable";
+        }
+    }
+}

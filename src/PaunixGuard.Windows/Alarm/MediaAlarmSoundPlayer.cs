@@ -6,6 +6,7 @@ namespace PaunixGuard.Windows.Alarm;
 
 public sealed class MediaAlarmSoundPlayer : IAlarmSoundPlayer, IDisposable
 {
+    private readonly object playerGate = new();
     private SoundPlayer? soundPlayer;
     private CancellationTokenSource? cancellation;
     private Task? playbackTask;
@@ -68,8 +69,15 @@ public sealed class MediaAlarmSoundPlayer : IAlarmSoundPlayer, IDisposable
             {
                 try
                 {
-                    soundPlayer = new SoundPlayer(filePath);
-                    soundPlayer.PlaySync();
+                    StopSound();
+                    SoundPlayer player;
+                    lock (playerGate)
+                    {
+                        player = new SoundPlayer(filePath);
+                        soundPlayer = player;
+                    }
+
+                    player.PlaySync();
                 }
                 catch
                 {
@@ -102,20 +110,25 @@ public sealed class MediaAlarmSoundPlayer : IAlarmSoundPlayer, IDisposable
 
     private void StopSound()
     {
-        if (soundPlayer is null)
+        SoundPlayer? player;
+        lock (playerGate)
+        {
+            player = soundPlayer;
+            soundPlayer = null;
+        }
+
+        if (player is null)
         {
             return;
         }
 
         try
         {
-            soundPlayer.Stop();
-            soundPlayer.Dispose();
+            player.Stop();
+            player.Dispose();
         }
         catch
         {
         }
-
-        soundPlayer = null;
     }
 }

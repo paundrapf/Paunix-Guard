@@ -6,13 +6,15 @@ namespace PaunixGuard.App.Views;
 public partial class SettingsWindow : Window
 {
     private readonly MainViewModel viewModel;
+    private readonly Core.Settings.GuardSettings draftSettings;
 
     public SettingsWindow(MainViewModel viewModel)
     {
         InitializeComponent();
         this.viewModel = viewModel;
 
-        var s = viewModel.Settings;
+        draftSettings = viewModel.Settings.Clone();
+        var s = draftSettings;
 
         ChkCharger.IsChecked = s.EnabledTriggers.Contains(Core.Triggers.TriggerType.ChargerUnplugged);
         ChkInput.IsChecked = s.EnabledTriggers.Contains(Core.Triggers.TriggerType.InputActivity);
@@ -31,7 +33,7 @@ public partial class SettingsWindow : Window
 
     private async void Save_Click(object sender, RoutedEventArgs e)
     {
-        var s = viewModel.Settings;
+        var s = draftSettings;
 
         SetTrigger(Core.Triggers.TriggerType.ChargerUnplugged, ChkCharger.IsChecked == true);
         SetTrigger(Core.Triggers.TriggerType.InputActivity, ChkInput.IsChecked == true);
@@ -69,7 +71,7 @@ public partial class SettingsWindow : Window
 
     private void SetTrigger(Core.Triggers.TriggerType type, bool enabled)
     {
-        var s = viewModel.Settings;
+        var s = draftSettings;
         if (enabled)
             s.EnabledTriggers.Add(type);
         else

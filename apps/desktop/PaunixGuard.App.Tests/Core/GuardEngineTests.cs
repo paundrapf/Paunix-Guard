@@ -70,6 +70,37 @@ public sealed class GuardEngineTests
     }
 
     [Fact]
+    public async Task SuspiciousWarning_EscalatesToAlarm_AfterCountdown()
+    {
+        var settings = new GuardSettings
+        {
+            ArmingDelaySeconds = 0,
+            InputWarningSeconds = 1
+        };
+        settings.EnabledTriggers.Add(TriggerType.PhoneDisconnected);
+
+        var fixture = CreateFixture(settings);
+        await fixture.Engine.InitializeAsync(CancellationToken.None);
+        await fixture.Engine.SetPinAsync("1234", CancellationToken.None);
+        await fixture.Engine.StartGuardAsync(CancellationToken.None);
+
+        await fixture.TriggerSupervisor.RaiseAsync(TriggerSignal.Create(
+            TriggerType.PhoneDisconnected,
+            "Phone disconnected.",
+            "test",
+            fixture.Clock.UtcNow));
+
+        Assert.Equal(GuardState.Warning, fixture.Engine.CurrentState);
+
+        await Task.Delay(1300);
+
+        Assert.Equal(GuardState.Alarm, fixture.Engine.CurrentState);
+        Assert.Equal(1, fixture.AlarmOrchestrator.StartCount);
+        Assert.Single(fixture.EventHistory.Events);
+        Assert.Equal(TriggerType.PhoneDisconnected, fixture.EventHistory.Events[0].TriggerType);
+    }
+
+    [Fact]
     public async Task DisarmAsync_RequiresValidPin_AndStopsAlarm()
     {
         var fixture = CreateFixture(new GuardSettings { ArmingDelaySeconds = 0 });
@@ -110,6 +141,47 @@ public sealed class GuardEngineTests
         Assert.Equal(GuardState.Idle, fixture.Engine.CurrentState);
         Assert.Equal(1, fixture.AlarmOrchestrator.StopCount);
         Assert.Equal(EventResolution.Cancelled, fixture.EventHistory.Events[0].Resolution);
+    }
+
+    [Fact]
+    public async Task RepeatedWrongPinsWhileAlarm_DoesNotCreateDuplicateEvents()
+    {
+        var fixture = CreateFixture(new GuardSettings { ArmingDelaySeconds = 0 });
+        await fixture.Engine.InitializeAsync(CancellationToken.None);
+        await fixture.Engine.SetPinAsync("1234", CancellationToken.None);
+        await fixture.Engine.StartGuardAsync(CancellationToken.None);
+        await fixture.TriggerSupervisor.RaiseAsync(TriggerSignal.Create(
+            TriggerType.ChargerUnplugged,
+            "Power adapter unplugged.",
+            "test",
+            fixture.Clock.UtcNow));
+
+        await fixture.Engine.DisarmAsync("0000", DisarmMethod.LaptopPin, CancellationToken.None);
+        await fixture.Engine.DisarmAsync("1111", DisarmMethod.LaptopPin, CancellationToken.None);
+        await fixture.Engine.DisarmAsync("2222", DisarmMethod.LaptopPin, CancellationToken.None);
+
+        Assert.Equal(GuardState.Alarm, fixture.Engine.CurrentState);
+        Assert.Single(fixture.EventHistory.Events);
+        Assert.Equal(1, fixture.AlarmOrchestrator.StartCount);
+    }
+
+    [Fact]
+    public async Task TwoWrongPinsWhileArmed_StartsSingleAlarm()
+    {
+        var fixture = CreateFixture(new GuardSettings { ArmingDelaySeconds = 0 });
+        await fixture.Engine.InitializeAsync(CancellationToken.None);
+        await fixture.Engine.SetPinAsync("1234", CancellationToken.None);
+        await fixture.Engine.StartGuardAsync(CancellationToken.None);
+
+        var first = await fixture.Engine.DisarmAsync("0000", DisarmMethod.LaptopPin, CancellationToken.None);
+        var second = await fixture.Engine.DisarmAsync("1111", DisarmMethod.LaptopPin, CancellationToken.None);
+
+        Assert.False(first);
+        Assert.False(second);
+        Assert.Equal(GuardState.Alarm, fixture.Engine.CurrentState);
+        Assert.Single(fixture.EventHistory.Events);
+        Assert.Equal(TriggerType.ManualPanic, fixture.EventHistory.Events[0].TriggerType);
+        Assert.Equal(1, fixture.AlarmOrchestrator.StartCount);
     }
 
     [Fact]
@@ -159,6 +231,58 @@ public sealed class GuardEngineTests
         Assert.False(fixture.Engine.Settings.BlockShutdownWhileArmed);
     }
 
+    [Fact]
+    public async Task SaveSettingsAsync_WhenArmed_Throws()
+    {
+        var fixture = CreateFixture(new GuardSettings { ArmingDelaySeconds = 0 });
+        await fixture.Engine.InitializeAsync(CancellationToken.None);
+        await fixture.Engine.SetPinAsync("1234", CancellationToken.None);
+        await fixture.Engine.StartGuardAsync(CancellationToken.None);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => fixture.Engine.SaveSettingsAsync(new GuardSettings(), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task PinChanges_RequireIdleStateAndCurrentPin()
+    {
+        var fixture = CreateFixture(new GuardSettings { ArmingDelaySeconds = 0 });
+        await fixture.Engine.InitializeAsync(CancellationToken.None);
+        await fixture.Engine.SetPinAsync("1234", CancellationToken.None);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => fixture.Engine.SetPinAsync("5678", CancellationToken.None));
+
+        Assert.False(await fixture.Engine.ChangePinAsync("0000", "5678", CancellationToken.None));
+        Assert.True(await fixture.Engine.ChangePinAsync("1234", "5678", CancellationToken.None));
+        Assert.True(await fixture.Engine.DisarmAsync("5678", DisarmMethod.LaptopPin, CancellationToken.None));
+
+        Assert.False(await fixture.Engine.ResetPinAsync("1234", CancellationToken.None));
+        Assert.True(await fixture.Engine.ResetPinAsync("5678", CancellationToken.None));
+        Assert.False(fixture.Engine.HasPin);
+    }
+
+    [Fact]
+    public async Task LoadedSettings_AreNormalized()
+    {
+        var fixture = CreateFixture(new GuardSettings
+        {
+            ArmingDelaySeconds = -1,
+            GracePeriodSeconds = -1,
+            InputWarningSeconds = 0,
+            EnabledTriggers = null!,
+            UpdateChannel = ""
+        });
+
+        await fixture.Engine.InitializeAsync(CancellationToken.None);
+
+        Assert.Equal(0, fixture.Engine.Settings.ArmingDelaySeconds);
+        Assert.Equal(0, fixture.Engine.Settings.GracePeriodSeconds);
+        Assert.Equal(1, fixture.Engine.Settings.InputWarningSeconds);
+        Assert.Contains(TriggerType.DesktopSwitch, fixture.Engine.Settings.EnabledTriggers);
+        Assert.Equal("stable", fixture.Engine.Settings.UpdateChannel);
+    }
+
     private static Fixture CreateFixture(GuardSettings settings)
     {
         var settingsStore = new FakeSettingsStore(settings);
@@ -188,4 +312,3 @@ public sealed class GuardEngineTests
         FakePowerProtectionService PowerProtection,
         FakeClock Clock);
 }
-

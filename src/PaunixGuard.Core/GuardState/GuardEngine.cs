@@ -58,24 +58,105 @@ public sealed class GuardEngine
     {
         await eventHistoryStore.InitializeAsync(cancellationToken);
         settings = await settingsStore.LoadAsync(cancellationToken);
+        settings.Normalize();
     }
 
     public async Task SaveSettingsAsync(GuardSettings updatedSettings, CancellationToken cancellationToken)
     {
-        settings = updatedSettings;
-        await settingsStore.SaveAsync(settings, cancellationToken);
+        await gate.WaitAsync(cancellationToken);
+        try
+        {
+            EnsureIdle("Settings can only be changed while guard mode is idle.");
+            settings = updatedSettings.Clone();
+            settings.Normalize();
+            await settingsStore.SaveAsync(settings, cancellationToken);
+        }
+        finally
+        {
+            gate.Release();
+        }
     }
 
     public async Task SetPinAsync(string pin, CancellationToken cancellationToken)
     {
-        settings.PinHash = pinHasher.HashPin(pin);
-        await settingsStore.SaveAsync(settings, cancellationToken);
+        await gate.WaitAsync(cancellationToken);
+        try
+        {
+            EnsureIdle("PIN can only be set while guard mode is idle.");
+            if (HasPin)
+            {
+                throw new InvalidOperationException("Use ChangePinAsync to change an existing PIN.");
+            }
+
+            settings.PinHash = pinHasher.HashPin(pin);
+            await settingsStore.SaveAsync(settings, cancellationToken);
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    public async Task<bool> ChangePinAsync(string currentPin, string newPin, CancellationToken cancellationToken)
+    {
+        await gate.WaitAsync(cancellationToken);
+        try
+        {
+            EnsureIdle("PIN can only be changed while guard mode is idle.");
+            if (!ValidatePin(currentPin))
+            {
+                return false;
+            }
+
+            settings.PinHash = pinHasher.HashPin(newPin);
+            await settingsStore.SaveAsync(settings, cancellationToken);
+            return true;
+        }
+        finally
+        {
+            gate.Release();
+        }
     }
 
     public async Task ResetPinAsync(CancellationToken cancellationToken)
     {
-        settings.PinHash = null;
-        await settingsStore.SaveAsync(settings, cancellationToken);
+        await gate.WaitAsync(cancellationToken);
+        try
+        {
+            EnsureIdle("PIN can only be reset while guard mode is idle.");
+            if (HasPin)
+            {
+                throw new InvalidOperationException("Current PIN is required to reset PIN.");
+            }
+
+            settings.PinHash = null;
+            await settingsStore.SaveAsync(settings, cancellationToken);
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    public async Task<bool> ResetPinAsync(string currentPin, CancellationToken cancellationToken)
+    {
+        await gate.WaitAsync(cancellationToken);
+        try
+        {
+            EnsureIdle("PIN can only be reset while guard mode is idle.");
+            if (!ValidatePin(currentPin))
+            {
+                return false;
+            }
+
+            settings.PinHash = null;
+            await settingsStore.SaveAsync(settings, cancellationToken);
+            return true;
+        }
+        finally
+        {
+            gate.Release();
+        }
     }
 
     public async Task StartGuardAsync(CancellationToken cancellationToken)
@@ -88,7 +169,7 @@ public sealed class GuardEngine
         await gate.WaitAsync(cancellationToken);
         try
         {
-            if (CurrentState is GuardState.Arming or GuardState.Armed or GuardState.Alarm)
+            if (CurrentState != GuardState.Idle)
             {
                 return;
             }
@@ -105,7 +186,14 @@ public sealed class GuardEngine
         var delay = TimeSpan.FromSeconds(Math.Max(0, settings.ArmingDelaySeconds));
         if (delay > TimeSpan.Zero)
         {
-            await Task.Delay(delay, guardCancellation.Token);
+            try
+            {
+                await Task.Delay(delay, guardCancellation.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
         }
 
         await gate.WaitAsync(cancellationToken);
@@ -146,20 +234,14 @@ public sealed class GuardEngine
             if (!ValidatePin(pin))
             {
                 pinFailures++;
-                if (pinFailures >= 2 && CurrentState != GuardState.Idle)
+                if (pinFailures >= 2 && CurrentState is not GuardState.Idle and not GuardState.Alarm)
                 {
                     var signal = TriggerSignal.Create(
                         TriggerType.ManualPanic,
-                        "Multiple failed PIN attempts — possible bruteforce.",
+                        "Multiple failed PIN attempts - possible brute force.",
                         "GuardEngine",
                         clock.UtcNow);
-                    var guardEvent = CreateEvent(signal, CurrentState);
-                    activeEvent = guardEvent;
-                    await eventHistoryStore.AddAsync(guardEvent, CancellationToken.None);
-                    TransitionTo(GuardState.Alarm, signal, guardEvent);
-                    guardEvent.AlarmStartedAt = clock.UtcNow;
-                    await eventHistoryStore.UpdateAsync(guardEvent, CancellationToken.None);
-                    await alarmOrchestrator.StartAsync(signal, settings, guardEvent, CancellationToken.None);
+                    await StartAlarmLockedAsync(signal, CurrentState, CancellationToken.None);
                 }
 
                 return false;
@@ -261,38 +343,20 @@ public sealed class GuardEngine
 
             if (decision == TriggerDecision.Warning)
             {
-                if (signal.Type == TriggerType.InputActivity)
+                if (CurrentState != GuardState.Warning)
                 {
-                    if (CurrentState != GuardState.Warning)
-                    {
-                        TransitionTo(GuardState.Warning, signal);
-                    }
-
-                    return;
+                    TransitionTo(GuardState.Warning, signal);
                 }
 
-                TransitionTo(GuardState.Warning, signal);
+                ResetWarningCountdown(signal);
                 return;
             }
 
-            var previousState = CurrentState;
-            var guardEvent = CreateEvent(signal, previousState);
-            activeEvent = guardEvent;
-            await eventHistoryStore.AddAsync(guardEvent, CancellationToken.None);
-
-            TransitionTo(GuardState.Alarm, signal, guardEvent);
-            guardEvent.AlarmStartedAt = clock.UtcNow;
-            await eventHistoryStore.UpdateAsync(guardEvent, CancellationToken.None);
-            await alarmOrchestrator.StartAsync(signal, settings, guardEvent, CancellationToken.None);
+            await StartAlarmLockedAsync(signal, CurrentState, CancellationToken.None);
         }
         finally
         {
             gate.Release();
-        }
-
-        if (signal.Type == TriggerType.InputActivity && CurrentState == GuardState.Warning)
-        {
-            ResetWarningCountdown(signal);
         }
     }
 
@@ -317,14 +381,7 @@ public sealed class GuardEngine
                     return;
                 }
 
-                var guardEvent = CreateEvent(originalSignal, GuardState.Warning);
-                activeEvent = guardEvent;
-                await eventHistoryStore.AddAsync(guardEvent, CancellationToken.None);
-
-                TransitionTo(GuardState.Alarm, originalSignal, guardEvent);
-                guardEvent.AlarmStartedAt = clock.UtcNow;
-                await eventHistoryStore.UpdateAsync(guardEvent, CancellationToken.None);
-                await alarmOrchestrator.StartAsync(originalSignal, settings, guardEvent, CancellationToken.None);
+                await StartAlarmLockedAsync(originalSignal, GuardState.Warning, CancellationToken.None);
             }
             finally
             {
@@ -339,6 +396,31 @@ public sealed class GuardEngine
     private bool ValidatePin(string pin)
     {
         return settings.PinHash is not null && pinHasher.Verify(pin, settings.PinHash);
+    }
+
+    private async Task StartAlarmLockedAsync(TriggerSignal signal, GuardState previousState, CancellationToken cancellationToken)
+    {
+        if (CurrentState == GuardState.Alarm)
+        {
+            return;
+        }
+
+        var guardEvent = CreateEvent(signal, previousState);
+        activeEvent = guardEvent;
+        await eventHistoryStore.AddAsync(guardEvent, cancellationToken);
+
+        TransitionTo(GuardState.Alarm, signal, guardEvent);
+        guardEvent.AlarmStartedAt = clock.UtcNow;
+        await eventHistoryStore.UpdateAsync(guardEvent, cancellationToken);
+        await alarmOrchestrator.StartAsync(signal, settings, guardEvent, cancellationToken);
+    }
+
+    private void EnsureIdle(string message)
+    {
+        if (CurrentState != GuardState.Idle)
+        {
+            throw new InvalidOperationException(message);
+        }
     }
 
     private GuardEvent CreateEvent(TriggerSignal signal, GuardState previousState)

@@ -23,6 +23,8 @@ public sealed class TriggerPolicy
 
     public TriggerDecision Decide(TriggerSignal signal, GuardSettings settings)
     {
+        settings.Normalize();
+
         if (!settings.EnabledTriggers.Contains(signal.Type))
         {
             return TriggerDecision.Ignore;
@@ -46,4 +48,3 @@ public sealed class TriggerPolicy
         return TriggerDecision.Ignore;
     }
 }
-

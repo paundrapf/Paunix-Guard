@@ -54,6 +54,16 @@ public partial class GuardScreenWindow : Window
         warningFlashTimer.Start();
     }
 
+    public void SetAlarmVisual()
+    {
+        warningFlashTimer?.Stop();
+        warningFlashTimer = null;
+        RootGrid.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xB4, 0x23, 0x18));
+        StateText.Text = "ALARM ACTIVE";
+        StateText.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.White);
+        MessageText.Text = "Enter your PIN to stop the alarm.";
+    }
+
     protected override void OnClosing(CancelEventArgs e)
     {
         warningFlashTimer?.Stop();
@@ -61,7 +71,8 @@ public partial class GuardScreenWindow : Window
 
         if (viewModel.CurrentState is GuardStateEnum.Armed
             or GuardStateEnum.Arming
-            or GuardStateEnum.Warning)
+            or GuardStateEnum.Warning
+            or GuardStateEnum.Alarm)
         {
             e.Cancel = true;
             return;

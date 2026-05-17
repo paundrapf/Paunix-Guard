@@ -1,11 +1,14 @@
 param(
-  [string]$Version = "0.1.0",
+  [string]$Version = "0.1.1",
+  [ValidateSet("stable", "beta")]
+  [string]$Channel = "stable",
   [string]$Configuration = "Release"
 )
 
 $ErrorActionPreference = "Stop"
 $publishDir = ".\publish\PaunixGuard"
 $releaseDir = ".\Releases"
+$velopackChannel = if ($Channel -eq "beta") { "win-beta" } else { "win" }
 
 dotnet publish ".\apps\desktop\PaunixGuard.App\PaunixGuard.App.csproj" `
   -c $Configuration `
@@ -19,5 +22,5 @@ vpk pack `
   --packVersion $Version `
   --packDir $publishDir `
   --mainExe "PaunixGuard.exe" `
+  --channel $velopackChannel `
   --outputDir $releaseDir
-

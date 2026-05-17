@@ -22,16 +22,22 @@ public sealed class KeyboardInterceptor : IDisposable
     private const int VkLwin = 0x5B;
     private const int VkRwin = 0x5C;
     private const int VkMenu = 0x12;
+    private const int VkLmenu = 0xA4;
+    private const int VkRmenu = 0xA5;
     private const int VkControl = 0x11;
+    private const int VkLcontrol = 0xA2;
+    private const int VkRcontrol = 0xA3;
     private const int VkEscape = 0x1B;
     private const int VkTab = 0x09;
     private const int VkF4 = 0x73;
     private const int VkSpace = 0x20;
     private const int VkApps = 0x5D;
+    private const int VkDelete = 0x2E;
     private const int VkLeft = 0x25;
     private const int VkRight = 0x27;
     private const int VkUp = 0x26;
     private const int VkDown = 0x28;
+    private const int LlkhfAltdown = 0x20;
 
     private LowLevelKeyboardProc? kbProc;
     private LowLevelMouseProc? mouseProc;
@@ -40,6 +46,7 @@ public sealed class KeyboardInterceptor : IDisposable
     private volatile bool isArmed;
     private volatile bool altDown;
     private volatile bool ctrlDown;
+    private volatile bool winDown;
 
     public void SetArmed(bool armed)
     {
@@ -102,6 +109,7 @@ public sealed class KeyboardInterceptor : IDisposable
 
         altDown = false;
         ctrlDown = false;
+        winDown = false;
     }
 
     public void Dispose()
@@ -133,6 +141,7 @@ public sealed class KeyboardInterceptor : IDisposable
 
             var kb = Marshal.PtrToStructure<KbdllHookStruct>(lParam);
 
+            altDown = altDown || (kb.flags & LlkhfAltdown) != 0;
             TrackModifierDown(kb.vkCode);
 
             if (ShouldBlockKey(kb.vkCode))
@@ -176,20 +185,27 @@ public sealed class KeyboardInterceptor : IDisposable
 
     private void TrackModifierDown(int vkCode)
     {
-        if (vkCode == VkMenu) altDown = true;
-        if (vkCode == VkControl) ctrlDown = true;
+        if (vkCode is VkMenu or VkLmenu or VkRmenu) altDown = true;
+        if (vkCode is VkControl or VkLcontrol or VkRcontrol) ctrlDown = true;
+        if (vkCode is VkLwin or VkRwin) winDown = true;
     }
 
     private void TrackModifierUp(IntPtr lParam)
     {
         var kb = Marshal.PtrToStructure<KbdllHookStruct>(lParam);
-        if (kb.vkCode == VkMenu) altDown = false;
-        if (kb.vkCode == VkControl) ctrlDown = false;
+        if (kb.vkCode is VkMenu or VkLmenu or VkRmenu) altDown = false;
+        if (kb.vkCode is VkControl or VkLcontrol or VkRcontrol) ctrlDown = false;
+        if (kb.vkCode is VkLwin or VkRwin) winDown = false;
     }
 
     private bool ShouldBlockKey(int vkCode)
     {
         if (vkCode is VkLwin or VkRwin)
+        {
+            return true;
+        }
+
+        if (winDown)
         {
             return true;
         }
@@ -204,6 +220,11 @@ public sealed class KeyboardInterceptor : IDisposable
         }
 
         if (ctrlDown && vkCode == VkEscape)
+        {
+            return true;
+        }
+
+        if (ctrlDown && altDown && vkCode == VkDelete)
         {
             return true;
         }

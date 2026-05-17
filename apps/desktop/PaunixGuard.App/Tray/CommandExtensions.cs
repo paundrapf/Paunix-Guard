@@ -7,6 +7,11 @@ public static class CommandExtensions
 {
     public static async Task ExecuteAsync(this ICommand command)
     {
+        if (!command.CanExecute(null))
+        {
+            return;
+        }
+
         if (command is RelayCommand relayCommand)
         {
             await relayCommand.ExecuteTaskAsync();
@@ -19,4 +24,3 @@ public static class CommandExtensions
         }
     }
 }
-

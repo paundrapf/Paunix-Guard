@@ -57,10 +57,19 @@ public sealed class TrayController(MainWindow mainWindow, AppCompositionRoot com
         mainWindow.Activate();
     }
 
-    private static void Quit()
+    private void Quit()
     {
+        if (compositionRoot.GuardEngine.CurrentState != PaunixGuard.Core.GuardState.GuardState.Idle)
+        {
+            System.Windows.MessageBox.Show(
+                "Disarm Paunix Guard before quitting.",
+                "Paunix Guard",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Information);
+            return;
+        }
+
         System.Windows.Application.Current.ShutdownMode = ShutdownMode.OnExplicitShutdown;
         System.Windows.Application.Current.Shutdown();
     }
 }
-

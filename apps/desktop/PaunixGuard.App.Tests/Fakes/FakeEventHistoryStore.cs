@@ -35,8 +35,8 @@ internal sealed class FakeEventHistoryStore : IEventHistoryStore
 
     public Task<IReadOnlyList<GuardEvent>> GetAllAsync(int limit = 100, CancellationToken cancellationToken = default)
     {
+        limit = Math.Clamp(limit, 1, 1000);
         return Task.FromResult<IReadOnlyList<GuardEvent>>(
             Events.OrderByDescending(x => x.CreatedAt).Take(limit).ToList().AsReadOnly());
     }
 }
-

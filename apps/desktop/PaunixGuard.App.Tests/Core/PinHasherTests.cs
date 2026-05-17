@@ -62,5 +62,13 @@ public sealed class PinHasherTests
         Assert.False(hasher.Verify("1234", "garbage"));
         Assert.False(hasher.Verify("1234", "pbkdf2-sha256$bad$more$parts"));
     }
-}
 
+    [Fact]
+    public void Verify_ReturnsFalse_WhenStoredIterationsAreUnsafe()
+    {
+        var hasher = new PinHasher();
+
+        Assert.False(hasher.Verify("1234", "pbkdf2-sha256$0$AAAA$AAAA"));
+        Assert.False(hasher.Verify("1234", "pbkdf2-sha256$1000001$AAAA$AAAA"));
+    }
+}

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Data.Sqlite;
 using PaunixGuard.Core.Events;
 using PaunixGuard.Core.GuardState;
@@ -122,11 +123,13 @@ public sealed class SqliteEventHistoryStore(AppDataPaths paths) : IEventHistoryS
             return null;
         }
 
-        return Read(reader);
+        return TryRead(reader);
     }
 
     public async Task<IReadOnlyList<GuardEvent>> GetAllAsync(int limit = 100, CancellationToken cancellationToken = default)
     {
+        limit = Math.Clamp(limit, 1, 1000);
+
         await using var connection = CreateConnection();
         await connection.OpenAsync(cancellationToken);
 
@@ -153,7 +156,11 @@ public sealed class SqliteEventHistoryStore(AppDataPaths paths) : IEventHistoryS
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
-            events.Add(Read(reader));
+            var guardEvent = TryRead(reader);
+            if (guardEvent is not null)
+            {
+                events.Add(guardEvent);
+            }
         }
 
         return events.AsReadOnly();
@@ -161,7 +168,12 @@ public sealed class SqliteEventHistoryStore(AppDataPaths paths) : IEventHistoryS
 
     private SqliteConnection CreateConnection()
     {
-        return new SqliteConnection($"Data Source={paths.EventsDatabasePath}");
+        var builder = new SqliteConnectionStringBuilder
+        {
+            DataSource = paths.EventsDatabasePath
+        };
+
+        return new SqliteConnection(builder.ToString());
     }
 
     private static void Bind(SqliteCommand command, GuardEvent guardEvent)
@@ -184,18 +196,28 @@ public sealed class SqliteEventHistoryStore(AppDataPaths paths) : IEventHistoryS
         return value.HasValue ? value.Value.ToString("O") : (object)DBNull.Value;
     }
 
-    private static GuardEvent Read(SqliteDataReader reader)
+    private static GuardEvent? TryRead(SqliteDataReader reader)
     {
+        if (!Guid.TryParse(reader.GetString(0), out var id)
+            || !DateTimeOffset.TryParse(reader.GetString(1), null, DateTimeStyles.RoundtripKind, out var createdAt)
+            || !Enum.TryParse<TriggerType>(reader.GetString(2), out var triggerType)
+            || !Enum.TryParse<GuardState>(reader.GetString(3), out var guardStateBefore)
+            || !Enum.TryParse<DisarmMethod>(reader.GetString(6), out var disarmMethod)
+            || !Enum.TryParse<EventResolution>(reader.GetString(7), out var resolution))
+        {
+            return null;
+        }
+
         return new GuardEvent
         {
-            Id = Guid.Parse(reader.GetString(0)),
-            CreatedAt = DateTimeOffset.Parse(reader.GetString(1), null, System.Globalization.DateTimeStyles.RoundtripKind),
-            TriggerType = Enum.Parse<TriggerType>(reader.GetString(2)),
-            GuardStateBefore = Enum.Parse<GuardState>(reader.GetString(3)),
+            Id = id,
+            CreatedAt = createdAt,
+            TriggerType = triggerType,
+            GuardStateBefore = guardStateBefore,
             AlarmStartedAt = ReadDateTime(reader, 4),
             AlarmStoppedAt = ReadDateTime(reader, 5),
-            DisarmMethod = Enum.Parse<DisarmMethod>(reader.GetString(6)),
-            Resolution = Enum.Parse<EventResolution>(reader.GetString(7)),
+            DisarmMethod = disarmMethod,
+            Resolution = resolution,
             AppVersion = reader.GetString(8),
             Reason = reader.GetString(9),
             Source = reader.GetString(10)
@@ -206,7 +228,8 @@ public sealed class SqliteEventHistoryStore(AppDataPaths paths) : IEventHistoryS
     {
         return reader.IsDBNull(ordinal)
             ? null
-            : DateTimeOffset.Parse(reader.GetString(ordinal), null, System.Globalization.DateTimeStyles.RoundtripKind);
+            : DateTimeOffset.TryParse(reader.GetString(ordinal), null, DateTimeStyles.RoundtripKind, out var value)
+                ? value
+                : null;
     }
 }
-

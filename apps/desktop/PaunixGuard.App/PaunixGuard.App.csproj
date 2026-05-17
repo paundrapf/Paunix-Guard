@@ -6,6 +6,7 @@
     <AssemblyName>PaunixGuard</AssemblyName>
     <RootNamespace>PaunixGuard.App</RootNamespace>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <StartupObject>PaunixGuard.App.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
     <Resource Include="Assets\logo.png" />

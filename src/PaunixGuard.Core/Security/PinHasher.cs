@@ -8,6 +8,7 @@ public sealed class PinHasher : IPinHasher
     private const int SaltSize = 16;
     private const int HashSize = 32;
     private const int Iterations = 120_000;
+    private const int MaxAcceptedIterations = 1_000_000;
     private const string Format = "pbkdf2-sha256";
 
     public string HashPin(string pin)
@@ -46,7 +47,9 @@ public sealed class PinHasher : IPinHasher
             return false;
         }
 
-        if (!int.TryParse(parts[1], out var iterations))
+        if (!int.TryParse(parts[1], out var iterations)
+            || iterations <= 0
+            || iterations > MaxAcceptedIterations)
         {
             return false;
         }
@@ -73,4 +76,3 @@ public sealed class PinHasher : IPinHasher
         return CryptographicOperations.FixedTimeEquals(actualHash, expectedHash);
     }
 }
-

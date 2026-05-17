@@ -6,11 +6,17 @@ namespace PaunixGuard.Windows.Power;
 
 public sealed class WindowsPowerProtectionService : IPowerProtectionService
 {
+    private static readonly IntPtr InvalidHandleValue = new(-1);
     private IntPtr requestHandle;
 
     public Task EnableAsync(GuardSettings settings, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+
+        if (requestHandle != IntPtr.Zero && requestHandle != InvalidHandleValue)
+        {
+            return Task.CompletedTask;
+        }
 
         if (!settings.KeepSystemAwakeWhileArmed && !settings.KeepDisplayAwakeWhileArmed)
         {
@@ -27,22 +33,24 @@ public sealed class WindowsPowerProtectionService : IPowerProtectionService
         try
         {
             requestHandle = PowerCreateRequest(ref context);
-            if (requestHandle == IntPtr.Zero)
+            if (requestHandle == IntPtr.Zero || requestHandle == InvalidHandleValue)
             {
+                LogNativeError("PowerCreateRequest", Marshal.GetLastWin32Error());
+                requestHandle = IntPtr.Zero;
                 return Task.CompletedTask;
             }
 
             if (settings.KeepSystemAwakeWhileArmed)
             {
-                PowerSetRequest(requestHandle, PowerRequestType.PowerRequestSystemRequired);
+                TrySetRequest(PowerRequestType.PowerRequestSystemRequired);
             }
 
             if (settings.KeepDisplayAwakeWhileArmed)
             {
-                PowerSetRequest(requestHandle, PowerRequestType.PowerRequestDisplayRequired);
+                TrySetRequest(PowerRequestType.PowerRequestDisplayRequired);
             }
 
-            PowerSetRequest(requestHandle, PowerRequestType.PowerRequestExecutionRequired);
+            TrySetRequest(PowerRequestType.PowerRequestExecutionRequired);
         }
         finally
         {
@@ -56,7 +64,7 @@ public sealed class WindowsPowerProtectionService : IPowerProtectionService
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (requestHandle != IntPtr.Zero)
+        if (requestHandle != IntPtr.Zero && requestHandle != InvalidHandleValue)
         {
             PowerClearRequest(requestHandle, PowerRequestType.PowerRequestSystemRequired);
             PowerClearRequest(requestHandle, PowerRequestType.PowerRequestDisplayRequired);
@@ -66,6 +74,31 @@ public sealed class WindowsPowerProtectionService : IPowerProtectionService
         }
 
         return Task.CompletedTask;
+    }
+
+    private void TrySetRequest(PowerRequestType requestType)
+    {
+        if (!PowerSetRequest(requestHandle, requestType))
+        {
+            LogNativeError($"PowerSetRequest:{requestType}", Marshal.GetLastWin32Error());
+        }
+    }
+
+    private static void LogNativeError(string operation, int errorCode)
+    {
+        try
+        {
+            var logDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "PaunixGuard");
+            Directory.CreateDirectory(logDir);
+
+            var line = $"{DateTimeOffset.UtcNow:O} [Power] {operation} failed with error code {errorCode}";
+            File.AppendAllText(Path.Combine(logDir, "error.log"), line + Environment.NewLine);
+        }
+        catch
+        {
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]

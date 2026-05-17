@@ -8,6 +8,7 @@ public sealed class AlarmOrchestrator(IAudioService audioService, IAlarmSoundPla
 {
     private readonly SemaphoreSlim gate = new(1, 1);
     private AudioStateSnapshot? snapshot;
+    private bool restoreAudioOnStop;
 
     public async Task StartAsync(TriggerSignal signal, GuardSettings settings, GuardEvent guardEvent, CancellationToken cancellationToken)
     {
@@ -19,10 +20,24 @@ public sealed class AlarmOrchestrator(IAudioService audioService, IAlarmSoundPla
                 return;
             }
 
+            snapshot = null;
+            restoreAudioOnStop = settings.RestoreAudioAfterDisarm;
+
             if (settings.ForceVolumeEnabled)
             {
-                snapshot = await audioService.CaptureAsync(cancellationToken);
-                await audioService.PrepareForAlarmAsync(settings.BluetoothAlarmBehavior, cancellationToken);
+                try
+                {
+                    if (settings.RestoreAudioAfterDisarm)
+                    {
+                        snapshot = await audioService.CaptureAsync(cancellationToken);
+                    }
+
+                    await audioService.PrepareForAlarmAsync(settings.BluetoothAlarmBehavior, cancellationToken);
+                }
+                catch
+                {
+                    snapshot = null;
+                }
             }
 
             await soundPlayer.StartAsync(settings.AlarmSound, cancellationToken);
@@ -40,11 +55,13 @@ public sealed class AlarmOrchestrator(IAudioService audioService, IAlarmSoundPla
         {
             await soundPlayer.StopAsync(cancellationToken);
 
-            if (snapshot is not null)
+            if (restoreAudioOnStop && snapshot is not null)
             {
                 await audioService.RestoreAsync(snapshot, cancellationToken);
-                snapshot = null;
             }
+
+            snapshot = null;
+            restoreAudioOnStop = false;
         }
         finally
         {
@@ -52,4 +69,3 @@ public sealed class AlarmOrchestrator(IAudioService audioService, IAlarmSoundPla
         }
     }
 }
-

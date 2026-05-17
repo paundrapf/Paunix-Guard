@@ -14,6 +14,9 @@ public sealed class WindowsSystemEventRouter
     private const int PbtApmSuspend = 0x0004;
     private const int PbtApmQuerySuspend = 0x0000;
     private const int PbtPowerSettingChange = 0x8013;
+    private const int BroadcastQueryDeny = 0x424D5144;
+    private const uint SpiGetStickyKeys = 0x003A;
+    private const uint SpiSetStickyKeys = 0x003B;
 
     private static readonly Guid GuidLidSwitchStateChange = new("BA3E0F4D-B817-4094-A2D1-D56379E6A0F3");
     private static readonly Guid ClsidVirtualDesktopManager = new("AA509086-5CA9-4C25-8F95-589D3C07B48A");
@@ -23,7 +26,8 @@ public sealed class WindowsSystemEventRouter
     private bool blockShutdown;
     private IntPtr mainWindowHandle;
     private IntPtr lidCloseNotificationHandle;
-    private IntPtr guardScreenHandle;
+    private readonly HashSet<IntPtr> guardScreenHandles = [];
+    private AccessibilityStickyKeys? stickyKeysSnapshot;
     private CancellationTokenSource? vdPollCancellation;
     private IVirtualDesktopManager? virtualDesktopManager;
 
@@ -39,7 +43,15 @@ public sealed class WindowsSystemEventRouter
 
     public void SetGuardScreenHandle(IntPtr handle)
     {
-        guardScreenHandle = handle;
+        if (handle != IntPtr.Zero)
+        {
+            guardScreenHandles.Add(handle);
+        }
+    }
+
+    public void ClearGuardScreenHandles()
+    {
+        guardScreenHandles.Clear();
     }
 
     public void Configure(bool armed, GuardSettings settings)
@@ -77,7 +89,7 @@ public sealed class WindowsSystemEventRouter
             {
                 Raise(TriggerType.SleepAttempt, "Windows sleep/suspend was requested while guard mode was armed.");
                 handled = code == PbtApmQuerySuspend;
-                return new IntPtr(handled ? 0 : 1);
+                return handled ? new IntPtr(BroadcastQueryDeny) : IntPtr.Zero;
             }
 
             if (code == PbtPowerSettingChange)
@@ -113,6 +125,7 @@ public sealed class WindowsSystemEventRouter
         StopVdPolling();
         RestoreAccessibilityKeys();
         UnregisterLidCloseNotification();
+        ClearGuardScreenHandles();
 
         if (mainWindowHandle != IntPtr.Zero)
         {
@@ -205,16 +218,25 @@ public sealed class WindowsSystemEventRouter
             {
                 await Task.Delay(500, ct);
 
-                if (!isArmed || virtualDesktopManager is null || guardScreenHandle == IntPtr.Zero)
+                if (!isArmed || virtualDesktopManager is null || guardScreenHandles.Count == 0)
                 {
                     continue;
                 }
 
-                if (!virtualDesktopManager.IsWindowOnCurrentVirtualDesktop(guardScreenHandle))
+                foreach (var handle in guardScreenHandles)
                 {
-                    Raise(TriggerType.DesktopSwitch,
-                        "Guard screen was moved off the current virtual desktop while armed.");
-                    return;
+                    if (handle == IntPtr.Zero)
+                    {
+                        continue;
+                    }
+
+                    var hr = virtualDesktopManager.IsWindowOnCurrentVirtualDesktop(handle, out var onCurrentDesktop);
+                    if (hr >= 0 && onCurrentDesktop == 0)
+                    {
+                        Raise(TriggerType.DesktopSwitch,
+                            "Guard screen was moved off the current virtual desktop while armed.");
+                        return;
+                    }
                 }
             }
             catch (OperationCanceledException)
@@ -231,13 +253,23 @@ public sealed class WindowsSystemEventRouter
     {
         try
         {
+            var current = new AccessibilityStickyKeys
+            {
+                Size = Marshal.SizeOf<AccessibilityStickyKeys>()
+            };
+
+            if (SystemParametersInfo(SpiGetStickyKeys, (uint)Marshal.SizeOf<AccessibilityStickyKeys>(), ref current, 0))
+            {
+                stickyKeysSnapshot = current;
+            }
+
             var off = new AccessibilityStickyKeys
             {
                 Size = Marshal.SizeOf<AccessibilityStickyKeys>(),
                 Flags = 0
             };
 
-            SystemParametersInfo(0x003B, (uint)Marshal.SizeOf<AccessibilityStickyKeys>(), ref off, 0);
+            SystemParametersInfo(SpiSetStickyKeys, (uint)Marshal.SizeOf<AccessibilityStickyKeys>(), ref off, 0);
         }
         catch
         {
@@ -248,13 +280,13 @@ public sealed class WindowsSystemEventRouter
     {
         try
         {
-            var defaultKeys = new AccessibilityStickyKeys
+            if (stickyKeysSnapshot is not { } previous)
             {
-                Size = Marshal.SizeOf<AccessibilityStickyKeys>(),
-                Flags = 0x00000202
-            };
+                return;
+            }
 
-            SystemParametersInfo(0x003B, (uint)Marshal.SizeOf<AccessibilityStickyKeys>(), ref defaultKeys, 0);
+            SystemParametersInfo(SpiSetStickyKeys, (uint)Marshal.SizeOf<AccessibilityStickyKeys>(), ref previous, 0);
+            stickyKeysSnapshot = null;
         }
         catch
         {
@@ -367,8 +399,13 @@ public sealed class WindowsSystemEventRouter
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     private interface IVirtualDesktopManager
     {
-        bool IsWindowOnCurrentVirtualDesktop(IntPtr topLevelWindow);
-        Guid GetWindowDesktopId(IntPtr topLevelWindow);
-        void MoveWindowToDesktop(IntPtr topLevelWindow, ref Guid desktopId);
+        [PreserveSig]
+        int IsWindowOnCurrentVirtualDesktop(IntPtr topLevelWindow, out int onCurrentDesktop);
+
+        [PreserveSig]
+        int GetWindowDesktopId(IntPtr topLevelWindow, out Guid desktopId);
+
+        [PreserveSig]
+        int MoveWindowToDesktop(IntPtr topLevelWindow, ref Guid desktopId);
     }
 }

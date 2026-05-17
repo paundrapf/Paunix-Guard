@@ -60,6 +60,16 @@ public partial class MainWindow : Window
 
     private void Settings_Click(object sender, RoutedEventArgs e)
     {
+        if (compositionRoot.GuardEngine.CurrentState != GuardState.Idle)
+        {
+            System.Windows.MessageBox.Show(
+                "Disarm Paunix Guard before changing settings.",
+                "Paunix Guard",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
         var window = new SettingsWindow(compositionRoot.MainViewModel);
         window.ShowDialog();
     }
@@ -72,6 +82,26 @@ public partial class MainWindow : Window
 
     private async void ResetPin_Click(object sender, RoutedEventArgs e)
     {
+        if (compositionRoot.GuardEngine.CurrentState != GuardState.Idle)
+        {
+            System.Windows.MessageBox.Show(
+                "Disarm Paunix Guard before resetting the PIN.",
+                "Paunix Guard",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(compositionRoot.MainViewModel.PinInput))
+        {
+            System.Windows.MessageBox.Show(
+                "Enter your current PIN in the main PIN box before resetting it.",
+                "Reset PIN",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
         var result = System.Windows.MessageBox.Show(
             "This will erase your current PIN. You will need to set a new one.",
             "Reset PIN",
@@ -82,8 +112,21 @@ public partial class MainWindow : Window
 
         try
         {
-            await compositionRoot.GuardEngine.ResetPinAsync(CancellationToken.None);
+            var reset = await compositionRoot.GuardEngine.ResetPinAsync(
+                compositionRoot.MainViewModel.PinInput,
+                CancellationToken.None);
+            if (!reset)
+            {
+                System.Windows.MessageBox.Show(
+                    "Current PIN is invalid.",
+                    "Reset PIN",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
             compositionRoot.MainViewModel.PinInput = "";
+            PinBox.Password = "";
             System.Windows.MessageBox.Show(
                 "PIN has been reset. The setup wizard will open.",
                 "Paunix Guard",
@@ -95,6 +138,7 @@ public partial class MainWindow : Window
             {
                 await compositionRoot.GuardEngine.SetPinAsync(wizard.WizardPin, CancellationToken.None);
                 compositionRoot.MainViewModel.PinInput = "";
+                PinBox.Password = "";
             }
         }
         catch (Exception ex)
@@ -109,11 +153,13 @@ public partial class MainWindow : Window
         {
             if (e.CurrentState == GuardState.Alarm)
             {
-                CloseGuardScreens();
-                kbInterceptor?.SetArmed(false);
+                EnsureGuardScreens();
+                SetAllGuardScreens(g => g.SetAlarmVisual());
+                kbInterceptor?.SetArmed(true);
                 alarmWindow ??= new AlarmWindow(compositionRoot.MainViewModel);
                 alarmWindow.Show();
                 alarmWindow.Activate();
+                Hide();
                 return;
             }
 
@@ -159,24 +205,28 @@ public partial class MainWindow : Window
             return;
         }
 
+        compositionRoot.SystemEventRouter.ClearGuardScreenHandles();
         var screens = System.Windows.Forms.Screen.AllScreens;
         for (var i = 0; i < screens.Length; i++)
         {
             var screen = screens[i];
             var guard = new GuardScreenWindow(compositionRoot.MainViewModel);
+            guard.WindowStartupLocation = WindowStartupLocation.Manual;
             guard.Left = screen.Bounds.Left;
             guard.Top = screen.Bounds.Top;
-            guard.WindowState = WindowState.Maximized;
+            guard.Width = screen.Bounds.Width;
+            guard.Height = screen.Bounds.Height;
+            guard.WindowState = WindowState.Normal;
             guard.ResizeMode = ResizeMode.NoResize;
             guard.Topmost = true;
             guard.ShowInTaskbar = false;
             guard.Show();
 
-            if (i == 0 && guard.IsLoaded)
+            if (guard.IsLoaded)
             {
                 RegisterGuardScreenHandle(guard);
             }
-            else if (i == 0)
+            else
             {
                 var captured = guard;
                 guard.SourceInitialized += (_, _) => RegisterGuardScreenHandle(captured);
@@ -208,5 +258,6 @@ public partial class MainWindow : Window
         }
 
         guardScreens.Clear();
+        compositionRoot.SystemEventRouter.ClearGuardScreenHandles();
     }
 }

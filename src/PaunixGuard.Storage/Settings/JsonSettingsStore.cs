@@ -24,15 +24,29 @@ public sealed class JsonSettingsStore(AppDataPaths paths) : ISettingsStore
             return defaults;
         }
 
-        await using var stream = File.OpenRead(paths.SettingsPath);
-        var settings = await JsonSerializer.DeserializeAsync<GuardSettings>(stream, JsonOptions, cancellationToken);
-        return settings ?? new GuardSettings();
+        try
+        {
+            await using var stream = File.OpenRead(paths.SettingsPath);
+            var settings = await JsonSerializer.DeserializeAsync<GuardSettings>(stream, JsonOptions, cancellationToken)
+                ?? new GuardSettings();
+            settings.Normalize();
+            return settings;
+        }
+        catch (JsonException)
+        {
+            return await RecoverWithDefaultsAsync(cancellationToken);
+        }
+        catch (IOException)
+        {
+            return await RecoverWithDefaultsAsync(cancellationToken);
+        }
     }
 
     public async Task SaveAsync(GuardSettings settings, CancellationToken cancellationToken)
     {
         paths.EnsureCreated();
-        var tempPath = paths.SettingsPath + ".tmp";
+        settings.Normalize();
+        var tempPath = $"{paths.SettingsPath}.{Guid.NewGuid():N}.tmp";
 
         await using (var stream = File.Create(tempPath))
         {
@@ -41,5 +55,29 @@ public sealed class JsonSettingsStore(AppDataPaths paths) : ISettingsStore
 
         File.Move(tempPath, paths.SettingsPath, true);
     }
-}
 
+    private async Task<GuardSettings> RecoverWithDefaultsAsync(CancellationToken cancellationToken)
+    {
+        TryMoveCorruptSettings();
+        var defaults = new GuardSettings();
+        await SaveAsync(defaults, cancellationToken);
+        return defaults;
+    }
+
+    private void TryMoveCorruptSettings()
+    {
+        try
+        {
+            if (!File.Exists(paths.SettingsPath))
+            {
+                return;
+            }
+
+            var corruptPath = $"{paths.SettingsPath}.corrupt-{DateTimeOffset.UtcNow:yyyyMMddHHmmss}";
+            File.Move(paths.SettingsPath, corruptPath, false);
+        }
+        catch
+        {
+        }
+    }
+}

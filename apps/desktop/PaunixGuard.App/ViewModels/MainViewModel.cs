@@ -33,12 +33,12 @@ public sealed class MainViewModel : INotifyPropertyChanged
         this.eventHistoryStore = eventHistoryStore;
         this.systemEventRouter = systemEventRouter;
 
-        StartGuardCommand = new RelayCommand(StartGuardAsync, () => !IsBusy && HasPin);
-        DisarmCommand = new RelayCommand(DisarmAsync, () => !IsBusy);
-        TestAlarmCommand = new RelayCommand(TestAlarmAsync, () => !IsBusy);
-        SavePinCommand = new RelayCommand(SavePinAsync, () => !IsBusy);
-        CheckUpdatesCommand = new RelayCommand(CheckUpdatesAsync, () => !IsBusy);
-        InstallUpdateCommand = new RelayCommand(InstallUpdateAsync, () => !IsBusy && HasPendingUpdate);
+        StartGuardCommand = new RelayCommand(StartGuardAsync, () => !IsBusy && HasPin && CurrentState == GuardState.Idle);
+        DisarmCommand = new RelayCommand(DisarmAsync, () => CurrentState != GuardState.Idle);
+        TestAlarmCommand = new RelayCommand(TestAlarmAsync, () => !IsBusy && HasPin && CurrentState == GuardState.Idle);
+        SavePinCommand = new RelayCommand(SavePinAsync, () => !IsBusy && CurrentState == GuardState.Idle);
+        CheckUpdatesCommand = new RelayCommand(CheckUpdatesAsync, () => !IsBusy && CurrentState == GuardState.Idle);
+        InstallUpdateCommand = new RelayCommand(InstallUpdateAsync, () => !IsBusy && HasPendingUpdate && CurrentState == GuardState.Idle);
 
         guardEngine.StateChanged += OnStateChanged;
     }
@@ -144,6 +144,12 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 return;
             }
 
+            if (HasPin)
+            {
+                StatusMessage = "PIN already exists. Use Reset PIN while idle to change it.";
+                return;
+            }
+
             await guardEngine.SetPinAsync(PinInput, CancellationToken.None);
             PinInput = "";
             StatusMessage = "PIN saved.";
@@ -172,7 +178,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             }
 
             await RefreshLatestEventAsync(CancellationToken.None);
-        });
+        }, allowWhenBusy: true);
     }
 
     private async Task TestAlarmAsync()
@@ -193,6 +199,12 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         await RunBusyAsync(async () =>
         {
+            if (guardEngine.CurrentState != GuardState.Idle)
+            {
+                StatusMessage = "Disarm Paunix Guard before checking updates.";
+                return;
+            }
+
             var result = await updateService.CheckAsync(guardEngine.Settings.UpdateChannel, CancellationToken.None);
             SetPendingUpdate(result);
 
@@ -208,14 +220,20 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         await RunBusyAsync(async () =>
         {
+            if (guardEngine.CurrentState != GuardState.Idle)
+            {
+                StatusMessage = "Disarm Paunix Guard before installing updates.";
+                return;
+            }
+
             StatusMessage = "Downloading update...";
             await updateService.DownloadAndApplyAsync(CancellationToken.None);
         });
     }
 
-    private async Task RunBusyAsync(Func<Task> action)
+    private async Task RunBusyAsync(Func<Task> action, bool allowWhenBusy = false)
     {
-        if (IsBusy)
+        if (IsBusy && !allowWhenBusy)
         {
             return;
         }
@@ -238,6 +256,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     private void OnStateChanged(object? sender, GuardStateChangedEventArgs e)
     {
+        RunOnUiThread(() => ApplyStateChanged(e));
+    }
+
+    private void ApplyStateChanged(GuardStateChangedEventArgs e)
+    {
         OnPropertyChanged(nameof(CurrentState));
         systemEventRouter.Configure(
             e.CurrentState is GuardState.Armed or GuardState.Warning or GuardState.Alarm,
@@ -246,6 +269,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         StatusMessage = e.Signal is null
             ? $"State changed: {e.CurrentState}"
             : $"{e.CurrentState}: {e.Signal.Reason}";
+        RaiseCommandStates();
     }
 
     private void RaiseCommandStates()
@@ -261,7 +285,18 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        RunOnUiThread(() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName)));
+    }
+
+    private static void RunOnUiThread(Action action)
+    {
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher is not null && !dispatcher.CheckAccess())
+        {
+            dispatcher.BeginInvoke(action);
+            return;
+        }
+
+        action();
     }
 }
-
