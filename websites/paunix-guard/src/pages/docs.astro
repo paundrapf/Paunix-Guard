@@ -1,0 +1,31 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PageHeader from "../components/PageHeader.astro";
+---
+
+<BaseLayout title="Docs - Paunix Guard">
+  <PageHeader
+    eyebrow="Docs"
+    title="Arm, step away, return with your PIN."
+    lead="These docs cover the current desktop build. Phone pairing and cloud relay are future companion features, not requirements for protection."
+  />
+
+  <section class="page-shell section feature-grid">
+    <article>
+      <h3>First run</h3>
+      <p>Install Paunix Guard, create a PIN in the setup wizard, choose the starter protection settings, and continue into the main app.</p>
+    </article>
+    <article>
+      <h3>Arming</h3>
+      <p>Click Start Guard when the laptop is positioned and connected as expected. A short grace period prevents immediate false alarms from setup movement.</p>
+    </article>
+    <article>
+      <h3>Disarming</h3>
+      <p>Enter your PIN on the guard screen or alarm window. Two wrong PIN attempts trigger the alarm as a brute-force protection measure.</p>
+    </article>
+    <article>
+      <h3>Updates</h3>
+      <p>Velopack-installed builds can check for updates while idle. If the guard is armed, disarm before installing an update.</p>
+    </article>
+  </section>
+</BaseLayout>

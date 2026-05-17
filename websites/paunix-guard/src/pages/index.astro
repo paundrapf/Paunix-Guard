@@ -1,0 +1,81 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ProductMockup from "../components/ProductMockup.astro";
+---
+
+<BaseLayout>
+  <section class="page-shell hero">
+    <div>
+      <p class="eyebrow">Windows laptop guard</p>
+      <h1>Paunix Guard</h1>
+      <p class="hero-copy">
+        A privacy-first desktop guard for coffee shops, libraries, coworking spaces, and any moment when your laptop needs to defend itself while you step away.
+      </p>
+      <div class="button-row" style="margin-top: 28px;">
+        <a class="btn btn-primary" href="/download/windows">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          Download for Windows
+        </a>
+        <a class="btn btn-secondary" href="/security">Security notes</a>
+      </div>
+    </div>
+    <ProductMockup />
+  </section>
+
+  <section class="page-shell section">
+    <div class="trust-strip">
+      <span>Works offline after install</span>
+      <span>No keylogging content</span>
+      <span>Stores data in LocalAppData</span>
+      <span>Open release notes</span>
+    </div>
+  </section>
+
+  <section class="page-shell section">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Protection model</p>
+        <h2>Built for short, risky moments.</h2>
+      </div>
+      <p class="lead">Paunix Guard reacts to physical theft signals and session changes without turning into hidden monitoring software.</p>
+    </div>
+    <div class="feature-grid">
+      <article>
+        <h3>Physical triggers</h3>
+        <p>Charger unplug, lid close, sleep attempts, shutdown attempts, input activity, and desktop/session switches can all escalate the guard state.</p>
+      </article>
+      <article>
+        <h3>Armed screen</h3>
+        <p>Fullscreen guard surfaces stay on every monitor while the app blocks common escape shortcuts where Windows allows user-mode apps to do so.</p>
+      </article>
+      <article>
+        <h3>Local history</h3>
+        <p>Events are stored locally in SQLite so you can audit what happened without sending laptop activity to a cloud service.</p>
+      </article>
+      <article>
+        <h3>Installer updates</h3>
+        <p>Velopack-installed builds can check the public update feed and notify you when a newer version is ready.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="page-shell section download-layout">
+    <div>
+      <p class="eyebrow">Distribution</p>
+      <h2 style="margin: 0; font-size: clamp(2rem, 4.4vw, 4rem); line-height: 1;">One installer. No release-page hunting.</h2>
+      <p class="lead">The website serves the Windows installer directly. Technical Velopack feed files stay behind update endpoints so normal users do not need to choose between packages.</p>
+    </div>
+    <aside class="download-box">
+      <h2>Current Windows build</h2>
+      <p>Recommended for Windows 10 and Windows 11 x64.</p>
+      <div class="download-meta">
+        <div><span>Version</span><strong>0.1.1</strong></div>
+        <div><span>Channel</span><strong>stable</strong></div>
+        <div><span>Format</span><strong>Setup.exe</strong></div>
+      </div>
+      <a class="btn btn-primary" href="/download/windows">Download installer</a>
+    </aside>
+  </section>
+</BaseLayout>

@@ -1,0 +1,31 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import PageHeader from "../../components/PageHeader.astro";
+---
+
+<BaseLayout title="Paunix Guard 0.1.1 Release Notes">
+  <PageHeader
+    eyebrow="Release 0.1.1"
+    title="Guard hardening and packaging cleanup."
+    lead="This release focuses on stronger armed-state behavior, safer PIN/update flows, and a clearer installer-first distribution path."
+  />
+
+  <section class="page-shell section feature-grid">
+    <article>
+      <h3>Protection</h3>
+      <p>Guard screens and hooks remain active during alarm, common shortcut paths are blocked while armed, and desktop/session changes escalate correctly.</p>
+    </article>
+    <article>
+      <h3>State safety</h3>
+      <p>Settings, PIN changes, quit actions, and update installs are gated while guard protection is active.</p>
+    </article>
+    <article>
+      <h3>Resilience</h3>
+      <p>Audio fallback, corrupt settings recovery, duplicate alarm prevention, and wrong-PIN alarm behavior have dedicated regression coverage.</p>
+    </article>
+    <article>
+      <h3>Installer path</h3>
+      <p>The recommended download is the setup installer. Technical update feed files are reserved for the auto-update pipeline.</p>
+    </article>
+  </section>
+</BaseLayout>

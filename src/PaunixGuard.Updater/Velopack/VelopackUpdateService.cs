@@ -6,7 +6,7 @@ namespace PaunixGuard.Updater.Velopack;
 
 public sealed class VelopackUpdateService : IUpdateService
 {
-    private const string DefaultRepositoryUrl = "https://github.com/paundrapf/Paunix-Guard";
+    private const string DefaultUpdateFeedUrl = "https://paunixguard.pages.dev/updates/windows";
     private static int startupHooksRun;
     private UpdateManager? updateManager;
     private string? updateManagerChannel;
@@ -46,7 +46,7 @@ public sealed class VelopackUpdateService : IUpdateService
             {
                 pendingUpdate = null;
                 return UpdateCheckResult.Failed(
-                    "Auto-update requires the Paunix Guard installer. Standalone EXE builds can be updated by downloading the latest release manually.");
+                    "Auto-update requires the Paunix Guard setup installer. Download the latest installer from https://paunixguard.pages.dev/download.");
             }
 
             if (updateManager.UpdatePendingRestart is not null)
@@ -89,7 +89,7 @@ public sealed class VelopackUpdateService : IUpdateService
 
         if (!updateManager.IsInstalled)
         {
-            throw new InvalidOperationException("Auto-update requires the Paunix Guard installer.");
+            throw new InvalidOperationException("Auto-update requires the Paunix Guard setup installer.");
         }
 
         var updateToApply = updateManager.UpdatePendingRestart;
@@ -121,11 +121,10 @@ public sealed class VelopackUpdateService : IUpdateService
 
     private static UpdateManager CreateUpdateManager(string channel)
     {
-        var source = new GithubSource(
-            DefaultRepositoryUrl,
-            accessToken: null,
-            prerelease: channel.Equals("win-beta", StringComparison.OrdinalIgnoreCase),
-            downloader: null);
+        var source = new SimpleWebSource(
+            DefaultUpdateFeedUrl,
+            downloader: null,
+            timeout: 2.0);
 
         var options = new UpdateOptions
         {

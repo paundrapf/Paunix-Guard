@@ -1,0 +1,33 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PageHeader from "../components/PageHeader.astro";
+---
+
+<BaseLayout title="Download Paunix Guard for Windows">
+  <PageHeader
+    eyebrow="Download"
+    title="Install Paunix Guard for Windows."
+    lead="Use the setup installer for the best experience. It enables Velopack-managed updates and avoids the confusing package choices shown on raw release pages."
+  />
+
+  <section class="page-shell section download-layout">
+    <div class="download-box">
+      <h2>Windows installer</h2>
+      <p>Recommended path for every normal user. After setup, create a PIN and Paunix Guard will continue directly into the app.</p>
+      <div class="download-meta">
+        <div><span>File</span><strong>PaunixGuard-win-Setup.exe</strong></div>
+        <div><span>Version</span><strong>0.1.1</strong></div>
+        <div><span>Auto-update</span><strong>Velopack</strong></div>
+      </div>
+      <div class="button-row">
+        <a class="btn btn-primary" href="/download/windows">Download for Windows</a>
+        <a class="btn btn-secondary" href="/changelog">View changelog</a>
+      </div>
+    </div>
+    <aside class="text-panel">
+      <h2>SmartScreen note</h2>
+      <p>Early builds are not code-signed yet, so Windows may show a SmartScreen warning. Code signing is planned; the current installer remains source-available and has public release notes.</p>
+      <p>Paunix Guard does not need an internet connection for core protection after install.</p>
+    </aside>
+  </section>
+</BaseLayout>

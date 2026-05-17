@@ -22,6 +22,7 @@ public partial class App : System.Windows.Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
         _ = StartupAsync();
     }
 
@@ -32,34 +33,25 @@ public partial class App : System.Windows.Application
             compositionRoot = new AppCompositionRoot();
             await compositionRoot.InitializeAsync(CancellationToken.None);
 
-            if (!compositionRoot.GuardEngine.HasPin)
-            {
-                while (!compositionRoot.GuardEngine.HasPin)
-                {
-                    var wizard = new SetupWizardWindow();
-                    wizard.ShowDialog();
-
-                    if (!string.IsNullOrWhiteSpace(wizard.WizardPin))
-                    {
-                        await compositionRoot.GuardEngine.SetPinAsync(wizard.WizardPin, CancellationToken.None);
-
-                        var settings = wizard.ResultSettings;
-                        var current = compositionRoot.GuardEngine.Settings;
-                        current.ForceVolumeEnabled = settings.ForceVolumeEnabled;
-                        current.RestoreAudioAfterDisarm = settings.RestoreAudioAfterDisarm;
-                        current.KeepSystemAwakeWhileArmed = settings.KeepSystemAwakeWhileArmed;
-                        current.BlockShutdownWhileArmed = settings.BlockShutdownWhileArmed;
-                        await compositionRoot.GuardEngine.SaveSettingsAsync(current, CancellationToken.None);
-                    }
-                }
-            }
-
             var mainWindow = new MainWindow(compositionRoot);
             MainWindow = mainWindow;
             trayController = new TrayController(mainWindow, compositionRoot);
             trayController.Initialize();
 
+            if (!compositionRoot.GuardEngine.HasPin)
+            {
+                await RunFirstSetupAsync(CancellationToken.None);
+            }
+
+            if (!compositionRoot.GuardEngine.HasPin)
+            {
+                Shutdown();
+                return;
+            }
+
             mainWindow.Show();
+            mainWindow.Activate();
+            ShutdownMode = ShutdownMode.OnLastWindowClose;
         }
         catch (Exception ex)
         {
@@ -70,6 +62,35 @@ public partial class App : System.Windows.Application
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
             Shutdown();
+        }
+    }
+
+    private async Task RunFirstSetupAsync(CancellationToken cancellationToken)
+    {
+        if (compositionRoot is null)
+        {
+            throw new InvalidOperationException("Application composition is not initialized.");
+        }
+
+        while (!compositionRoot.GuardEngine.HasPin)
+        {
+            var wizard = new SetupWizardWindow();
+            var result = wizard.ShowDialog();
+
+            if (result != true || string.IsNullOrWhiteSpace(wizard.WizardPin))
+            {
+                return;
+            }
+
+            await compositionRoot.GuardEngine.SetPinAsync(wizard.WizardPin, cancellationToken);
+
+            var settings = wizard.ResultSettings;
+            var current = compositionRoot.GuardEngine.Settings;
+            current.ForceVolumeEnabled = settings.ForceVolumeEnabled;
+            current.RestoreAudioAfterDisarm = settings.RestoreAudioAfterDisarm;
+            current.KeepSystemAwakeWhileArmed = settings.KeepSystemAwakeWhileArmed;
+            current.BlockShutdownWhileArmed = settings.BlockShutdownWhileArmed;
+            await compositionRoot.GuardEngine.SaveSettingsAsync(current, cancellationToken);
         }
     }
 

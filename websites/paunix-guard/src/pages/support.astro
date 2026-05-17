@@ -1,0 +1,24 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PageHeader from "../components/PageHeader.astro";
+---
+
+<BaseLayout title="Support - Paunix Guard">
+  <PageHeader
+    eyebrow="Support"
+    title="Report bugs with enough detail to fix them."
+    lead="For now, support is handled through the GitHub repository and public issue tracking."
+  />
+
+  <section class="page-shell section download-layout">
+    <div class="text-panel">
+      <h2>Bug reports</h2>
+      <p>Include your Windows version, Paunix Guard version, whether it was installed through the setup installer, and what state the guard was in.</p>
+      <a class="btn btn-primary" href="https://github.com/paundrapf/Paunix-Guard/issues">Open GitHub issues</a>
+    </div>
+    <aside class="text-panel">
+      <h2>Before posting logs</h2>
+      <p>Review any log content before sharing. Error logs are intended for crashes and startup failures, not for collecting private activity.</p>
+    </aside>
+  </section>
+</BaseLayout>

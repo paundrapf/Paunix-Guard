@@ -3,7 +3,7 @@
 <img src="assets/logo-128x128.png" alt="Paunix Guard" width="128" align="right">
 
 [![License](https://img.shields.io/badge/license-PolyForm%20Shield-blue)](https://polyformproject.org/licenses/shield/1.0.0/)
-[![Download v0.1.1](https://img.shields.io/badge/download-v0.1.1-brightgreen)](https://github.com/paundrapf/Paunix-Guard/releases/tag/v0.1.1)
+[![Download v0.1.1](https://img.shields.io/badge/download-v0.1.1-brightgreen)](https://paunixguard.pages.dev/download)
 
 Paunix Guard is a Windows-first, privacy-first laptop guard for public workspaces.
 It is designed to protect a laptop while the owner steps away briefly by reacting to physical theft signals such as power unplug, input activity, sleep attempts, shutdown attempts, lid close, and desktop/session switches.
@@ -56,10 +56,23 @@ Commands:
 
 ## Updates
 
-Paunix Guard uses Velopack for installer packaging and GitHub Releases for update distribution.
-Automatic in-app updates work when Paunix Guard is installed with the Velopack installer. Standalone EXE/zip builds can still check the latest release manually. Core protection works entirely offline.
+Paunix Guard uses Velopack for installer packaging and a public Cloudflare-hosted update feed for update distribution.
+Automatic in-app updates work when Paunix Guard is installed with the setup installer. Standalone EXE/zip builds can still be updated manually. Core protection works entirely offline.
 
 Unsigned early builds may trigger Windows SmartScreen warnings until code signing is configured.
+
+## Website and Distribution
+
+The user-facing website lives in `websites/paunix-guard` and deploys to Cloudflare Pages.
+Release installers and Velopack feed files are served from Cloudflare R2 through website routes so users only need the Windows installer.
+
+```powershell
+cd websites\paunix-guard
+npm install
+npm run build
+```
+
+Release packaging and Cloudflare upload are documented in [docs/release-cloudflare.md](docs/release-cloudflare.md).
 
 ## FAQ
 

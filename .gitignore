@@ -10,6 +10,8 @@ build/
 publish/
 Releases/
 node_modules/
+.astro/
+.wrangler/
 .vs/
 .idea/
 .cache/

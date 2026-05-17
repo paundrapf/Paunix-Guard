@@ -1,0 +1,40 @@
+---
+import "../styles/global.css";
+import SiteNav from "../components/SiteNav.astro";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "Paunix Guard - Windows laptop guard for public workspaces",
+  description = "Paunix Guard is a privacy-first Windows app that protects a laptop when the owner steps away briefly."
+} = Astro.props;
+const canonical = new URL(Astro.url.pathname, import.meta.env.PUBLIC_SITE_URL ?? Astro.site ?? "https://paunixguard.pages.dev");
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#f7f5ef" />
+    <link rel="canonical" href={canonical.href} />
+    <link rel="icon" href="/brand/logo-128x128.png" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <SiteNav />
+    <main>
+      <slot />
+    </main>
+    <footer class="footer">
+      <div class="page-shell footer-inner">
+        <span>Paunix Guard is source-available under the PolyForm Shield License.</span>
+        <span>Privacy-first. Offline-first. No keylogging content.</span>
+      </div>
+    </footer>
+  </body>
+</html>

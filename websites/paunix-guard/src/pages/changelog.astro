@@ -1,0 +1,30 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PageHeader from "../components/PageHeader.astro";
+---
+
+<BaseLayout title="Changelog - Paunix Guard">
+  <PageHeader
+    eyebrow="Changelog"
+    title="Release history that users can actually read."
+    lead="Each release notes what changed, what got safer, and whether there is anything users should know before installing."
+  />
+
+  <section class="page-shell section timeline">
+    <article>
+      <time>0.1.1</time>
+      <div>
+        <h2>Guard hardening and update packaging</h2>
+        <p>Improved guard screen persistence, shortcut blocking, wrong-PIN alarm behavior, audio resilience, settings recovery, and Velopack packaging.</p>
+        <a class="btn btn-secondary" href="/changelog/0.1.1">Read 0.1.1 notes</a>
+      </div>
+    </article>
+    <article>
+      <time>0.1.0</time>
+      <div>
+        <h2>Initial desktop release</h2>
+        <p>First public Windows build with setup wizard, local event history, core triggers, alarm flow, and offline guard behavior.</p>
+      </div>
+    </article>
+  </section>
+</BaseLayout>

@@ -1,0 +1,21 @@
+{
+  "name": "@paunix/guard-website",
+  "version": "0.1.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "functions:build": "wrangler pages functions build functions --outdir .wrangler/functions-build --output-routes-path .wrangler/functions-routes.json --compatibility-date=2026-05-17",
+    "preview": "wrangler pages dev ./dist --r2=PAUNIX_RELEASES=paunix-guard-releases",
+    "deploy": "npm run build && wrangler pages deploy ./dist --project-name paunix-guard"
+  },
+  "dependencies": {
+    "astro": "^6.3.3"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260517.1",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.92.0"
+  }
+}

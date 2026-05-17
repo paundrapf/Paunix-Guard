@@ -1,0 +1,31 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PageHeader from "../components/PageHeader.astro";
+---
+
+<BaseLayout title="FAQ - Paunix Guard">
+  <PageHeader
+    eyebrow="FAQ"
+    title="Clear answers before you trust it."
+    lead="Paunix Guard is early, source-available Windows software. The important tradeoffs are written plainly."
+  />
+
+  <section class="page-shell section" style="display: grid; gap: 16px;">
+    <article class="faq-item">
+      <h2>Does it work without internet?</h2>
+      <p>Yes. Arming, alarm behavior, PIN checks, guard screens, and local history are offline-first. Internet is only needed for update checks.</p>
+    </article>
+    <article class="faq-item">
+      <h2>Why does Windows warn about the installer?</h2>
+      <p>The current build is unsigned. Windows SmartScreen commonly warns on unsigned early apps. Code signing is planned before broader distribution.</p>
+    </article>
+    <article class="faq-item">
+      <h2>Does it record what I type?</h2>
+      <p>No. It may detect that keyboard or mouse input happened while armed, but it must not record the text, keys, clicks, clipboard, files, or screenshots.</p>
+    </article>
+    <article class="faq-item">
+      <h2>Can it stop every Windows shortcut?</h2>
+      <p>No user-mode app can promise that. Paunix Guard blocks common paths and triggers alarms on session/desktop changes, but OS-level security still matters.</p>
+    </article>
+  </section>
+</BaseLayout>

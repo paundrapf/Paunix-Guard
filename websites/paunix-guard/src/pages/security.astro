@@ -1,0 +1,31 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PageHeader from "../components/PageHeader.astro";
+---
+
+<BaseLayout title="Security Notes - Paunix Guard">
+  <PageHeader
+    eyebrow="Security"
+    title="Protection without hidden surveillance."
+    lead="Paunix Guard is intentionally narrow: protect the laptop while armed, store state locally, and avoid collecting sensitive user content."
+  />
+
+  <section class="page-shell section feature-grid">
+    <article>
+      <h3>What it watches</h3>
+      <p>The app detects that input occurred, power state changed, the lid closed, a system session changed, or the guard desktop changed.</p>
+    </article>
+    <article>
+      <h3>What it avoids</h3>
+      <p>No key contents, no clipboard reads, no file browsing, no remote shell, no stealth screenshots, and no hidden monitoring workflow.</p>
+    </article>
+    <article>
+      <h3>Local storage</h3>
+      <p>Settings and event history stay under LocalAppData, not inside the Velopack install directory and not in a cloud account.</p>
+    </article>
+    <article>
+      <h3>Windows limits</h3>
+      <p>User-mode apps can reduce escape paths but cannot replace BitLocker, Windows account locks, physical security, or a signed enterprise kiosk policy.</p>
+    </article>
+  </section>
+</BaseLayout>
