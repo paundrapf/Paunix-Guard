@@ -6,7 +6,7 @@ namespace PaunixGuard.Updater.Velopack;
 
 public sealed class VelopackUpdateService : IUpdateService
 {
-    private const string DefaultUpdateFeedUrl = "https://paunixguard.pages.dev/updates/windows";
+    private const string DefaultUpdateFeedUrl = "https://paunix-guard.pages.dev/updates/windows";
     private static int startupHooksRun;
     private UpdateManager? updateManager;
     private string? updateManagerChannel;
@@ -46,7 +46,7 @@ public sealed class VelopackUpdateService : IUpdateService
             {
                 pendingUpdate = null;
                 return UpdateCheckResult.Failed(
-                    "Auto-update requires the Paunix Guard setup installer. Download the latest installer from https://paunixguard.pages.dev/download.");
+                    "Auto-update requires the Paunix Guard setup installer. Download the latest installer from https://paunix-guard.pages.dev/download.");
             }
 
             if (updateManager.UpdatePendingRestart is not null)

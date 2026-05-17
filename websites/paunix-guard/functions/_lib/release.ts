@@ -20,7 +20,7 @@ export const releaseKeys = {
 } as const;
 
 export function defaultMetadata(env: Env): ReleaseMetadata {
-  const siteUrl = env.PUBLIC_SITE_URL ?? "https://paunixguard.pages.dev";
+  const siteUrl = env.PUBLIC_SITE_URL ?? "https://paunix-guard.pages.dev";
   return {
     version: "0.1.1",
     channel: "stable",

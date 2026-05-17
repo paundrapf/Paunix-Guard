@@ -5,7 +5,7 @@ param(
   [string]$Configuration = "Release",
   [string]$BucketName = "paunix-guard-releases",
   [string]$PagesProject = "paunix-guard",
-  [string]$PublicSiteUrl = "https://paunixguard.pages.dev",
+  [string]$PublicSiteUrl = "https://paunix-guard.pages.dev",
   [switch]$SkipDesktopBuild,
   [switch]$SkipPackage,
   [switch]$SkipSmokeLaunch,

@@ -8,5 +8,5 @@ bucket_name = "paunix-guard-releases"
 preview_bucket_name = "paunix-guard-releases-preview"
 
 [vars]
-PUBLIC_SITE_URL = "https://paunixguard.pages.dev"
+PUBLIC_SITE_URL = "https://paunix-guard.pages.dev"
 PUBLIC_DOWNLOAD_FALLBACK_URL = "https://github.com/paundrapf/Paunix-Guard/releases/download/v0.1.1/PaunixGuard-win-Setup.exe"

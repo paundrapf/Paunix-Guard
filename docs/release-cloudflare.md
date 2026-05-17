@@ -23,9 +23,9 @@ The script builds and tests the desktop app, packages Velopack assets, smoke-lau
 
 After deployment, verify these URLs:
 
-- `https://paunixguard.pages.dev/download/windows`
-- `https://paunixguard.pages.dev/api/latest`
-- `https://paunixguard.pages.dev/updates/windows/RELEASES`
+- `https://paunix-guard.pages.dev/download/windows`
+- `https://paunix-guard.pages.dev/api/latest`
+- `https://paunix-guard.pages.dev/updates/windows/RELEASES`
 
 Then install from the website on a clean Windows profile. On first run, create a PIN in the setup wizard and confirm that the main app opens immediately after Finish.
 
