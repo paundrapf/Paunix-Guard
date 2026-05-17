@@ -1,0 +1,31 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import PageHeader from "../../components/PageHeader.astro";
+---
+
+<BaseLayout title="Paunix Guard 0.1.2 Release Notes">
+  <PageHeader
+    eyebrow="Release 0.1.2"
+    title="Installer handoff and distribution polish."
+    lead="This release focuses on the first-run setup experience and the Cloudflare-hosted download path."
+  />
+
+  <section class="page-shell section feature-grid">
+    <article>
+      <h3>First-run setup</h3>
+      <p>The main app window is now alive behind the setup wizard, so finishing PIN setup returns users directly to Paunix Guard.</p>
+    </article>
+    <article>
+      <h3>Installer branding</h3>
+      <p>The Velopack setup package now receives the Paunix Guard icon and splash image during packaging.</p>
+    </article>
+    <article>
+      <h3>Website download path</h3>
+      <p>The public website serves the installer through Cloudflare Pages Functions backed by R2, keeping technical package files out of the normal user flow.</p>
+    </article>
+    <article>
+      <h3>Header polish</h3>
+      <p>The site header now links directly to the source repository beside the primary download action.</p>
+    </article>
+  </section>
+</BaseLayout>

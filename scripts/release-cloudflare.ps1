@@ -1,5 +1,5 @@
 param(
-  [string]$Version = "0.1.1",
+  [string]$Version = "0.1.2",
   [ValidateSet("stable", "beta")]
   [string]$Channel = "stable",
   [string]$Configuration = "Release",
@@ -49,7 +49,7 @@ function Put-R2Object {
     throw "Missing release file: $Path"
   }
 
-  Invoke-LoggedCommand "wrangler" @("r2", "object", "put", "$BucketName/$Key", "--file", $Path)
+  Invoke-LoggedCommand "wrangler" @("r2", "object", "put", "$BucketName/$Key", "--file", $Path, "--remote")
 }
 
 if (!$SkipDesktopBuild) {
@@ -107,9 +107,12 @@ if (!$DryRun) {
 if (!$SkipUpload) {
   Put-R2Object "installers/windows/latest/PaunixGuard-win-Setup.exe" $setup
   Put-R2Object "installers/windows/$Version/PaunixGuard-win-Setup.exe" $setup
-  Put-R2Object "updates/windows/PaunixGuard-$Version-full.nupkg" $package
+  Get-ChildItem -Path $releaseDir -Filter "PaunixGuard-*.nupkg" | ForEach-Object {
+    Put-R2Object "updates/windows/$($_.Name)" $_.FullName
+  }
   Put-R2Object "updates/windows/releases.win.json" $releaseIndex
   Put-R2Object "updates/windows/RELEASES" $legacyReleaseIndex
+  Put-R2Object "updates/windows/assets.win.json" (Join-Path $releaseDir "assets.win.json")
   Put-R2Object "metadata/latest.json" $metadataPath
   Put-R2Object "metadata/changelog.json" $changelogPath
 }

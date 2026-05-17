@@ -2,7 +2,7 @@ import type { APIContext } from "astro";
 
 export const prerender = true;
 
-const routes = ["/", "/download", "/security", "/docs", "/faq", "/support", "/changelog", "/changelog/0.1.1"];
+const routes = ["/", "/download", "/security", "/docs", "/faq", "/support", "/changelog", "/changelog/0.1.2", "/changelog/0.1.1"];
 
 export function GET(context: APIContext) {
   const urls = routes

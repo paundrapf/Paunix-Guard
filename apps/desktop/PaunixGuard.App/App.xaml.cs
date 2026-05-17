@@ -38,20 +38,25 @@ public partial class App : System.Windows.Application
             trayController = new TrayController(mainWindow, compositionRoot);
             trayController.Initialize();
 
+            mainWindow.Show();
+            mainWindow.Activate();
+            ShutdownMode = ShutdownMode.OnLastWindowClose;
+
             if (!compositionRoot.GuardEngine.HasPin)
             {
-                await RunFirstSetupAsync(CancellationToken.None);
+                await RunFirstSetupAsync(mainWindow, CancellationToken.None);
             }
 
             if (!compositionRoot.GuardEngine.HasPin)
             {
+                ShutdownMode = ShutdownMode.OnExplicitShutdown;
                 Shutdown();
                 return;
             }
 
             mainWindow.Show();
+            mainWindow.WindowState = WindowState.Normal;
             mainWindow.Activate();
-            ShutdownMode = ShutdownMode.OnLastWindowClose;
         }
         catch (Exception ex)
         {
@@ -65,7 +70,7 @@ public partial class App : System.Windows.Application
         }
     }
 
-    private async Task RunFirstSetupAsync(CancellationToken cancellationToken)
+    private async Task RunFirstSetupAsync(Window owner, CancellationToken cancellationToken)
     {
         if (compositionRoot is null)
         {
@@ -74,7 +79,11 @@ public partial class App : System.Windows.Application
 
         while (!compositionRoot.GuardEngine.HasPin)
         {
-            var wizard = new SetupWizardWindow();
+            var wizard = new SetupWizardWindow
+            {
+                Owner = owner,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
             var result = wizard.ShowDialog();
 
             if (result != true || string.IsNullOrWhiteSpace(wizard.WizardPin))
@@ -91,6 +100,7 @@ public partial class App : System.Windows.Application
             current.KeepSystemAwakeWhileArmed = settings.KeepSystemAwakeWhileArmed;
             current.BlockShutdownWhileArmed = settings.BlockShutdownWhileArmed;
             await compositionRoot.GuardEngine.SaveSettingsAsync(current, cancellationToken);
+            compositionRoot.MainViewModel.NotifyPinChanged();
         }
     }
 

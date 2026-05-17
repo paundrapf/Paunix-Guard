@@ -126,6 +126,12 @@ public sealed class MainViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(UpdateBannerVisibility));
     }
 
+    public void NotifyPinChanged()
+    {
+        OnPropertyChanged(nameof(HasPin));
+        RaiseCommandStates();
+    }
+
     public async Task RefreshLatestEventAsync(CancellationToken cancellationToken)
     {
         var guardEvent = await eventHistoryStore.GetLatestAsync(cancellationToken);

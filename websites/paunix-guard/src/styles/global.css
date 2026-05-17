@@ -177,6 +177,33 @@ a {
   color: var(--ink);
 }
 
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.icon-btn {
+  display: inline-grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 254, 250, 0.72);
+  color: var(--charcoal);
+  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+}
+
+.icon-btn:hover {
+  border-color: #c9bfad;
+  background: var(--paper);
+}
+
+.icon-btn:active {
+  transform: translateY(1px) scale(0.98);
+}
+
 .hero {
   display: grid;
   min-height: calc(100dvh - 70px);

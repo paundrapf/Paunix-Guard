@@ -3,7 +3,7 @@
 <img src="assets/logo-128x128.png" alt="Paunix Guard" width="128" align="right">
 
 [![License](https://img.shields.io/badge/license-PolyForm%20Shield-blue)](https://polyformproject.org/licenses/shield/1.0.0/)
-[![Download v0.1.1](https://img.shields.io/badge/download-v0.1.1-brightgreen)](https://paunix-guard.pages.dev/download)
+[![Download v0.1.2](https://img.shields.io/badge/download-v0.1.2-brightgreen)](https://paunix-guard.pages.dev/download)
 
 Paunix Guard is a Windows-first, privacy-first laptop guard for public workspaces.
 It is designed to protect a laptop while the owner steps away briefly by reacting to physical theft signals such as power unplug, input activity, sleep attempts, shutdown attempts, lid close, and desktop/session switches.

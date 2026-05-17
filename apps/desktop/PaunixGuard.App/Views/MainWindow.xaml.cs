@@ -137,6 +137,7 @@ public partial class MainWindow : Window
             if (wizard.ShowDialog() == true || !string.IsNullOrWhiteSpace(wizard.WizardPin))
             {
                 await compositionRoot.GuardEngine.SetPinAsync(wizard.WizardPin, CancellationToken.None);
+                compositionRoot.MainViewModel.NotifyPinChanged();
                 compositionRoot.MainViewModel.PinInput = "";
                 PinBox.Password = "";
             }
